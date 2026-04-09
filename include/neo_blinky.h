@@ -1,5 +1,6 @@
 #ifndef __NEO_BLINKY__
 #define __NEO_BLINKY__
+#include <global.h>
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
 

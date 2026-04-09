@@ -9,6 +9,8 @@ void temp_humi_monitor(void *pvParameters){
     Serial.begin(115200);
     dht20.begin();
 
+    SensorData_t currentData;
+
     while (1){
         /* code */
         
@@ -23,21 +25,35 @@ void temp_humi_monitor(void *pvParameters){
         // Check if any reads failed and exit early
         if (isnan(temperature) || isnan(humidity)) {
             Serial.println("Failed to read from DHT sensor!");
-            temperature = humidity =  -1;
+            temperature = -1;
+            humidity =  -1;
             //return;
+        }else{
+            currentData.temperature = temperature;
+            currentData.humidity = humidity;
+
+            Serial.print("Humidity: ");
+            Serial.print(humidity);
+            Serial.print("%  Temperature: ");
+            Serial.print(temperature);
+            Serial.println("°C");
         }
 
-        //Update global variables for temperature and humidity
-        glob_temperature = temperature;
-        glob_humidity = humidity;
+        if (sensorQueue != NULL) {
+            xQueueOverwrite(sensorQueue, &currentData);
+        }
 
-        // Print the results
+        // //Update global variables for temperature and humidity
+        // glob_temperature = temperature;
+        // glob_humidity = humidity;
+
+        // // Print the results
         
-        Serial.print("Humidity: ");
-        Serial.print(humidity);
-        Serial.print("%  Temperature: ");
-        Serial.print(temperature);
-        Serial.println("°C");
+        // Serial.print("Humidity: ");
+        // Serial.print(humidity);
+        // Serial.print("%  Temperature: ");
+        // Serial.print(temperature);
+        // Serial.println("°C");
         
         vTaskDelay(5000);
     }
