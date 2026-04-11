@@ -1,6 +1,6 @@
 #include "temp_humi_monitor.h"
 DHT20 dht20;
-LiquidCrystal_I2C lcd(33,16,2);
+LiquidCrystal_I2C lcd(0x27,16,2);
 
 
 void temp_humi_monitor(void *pvParameters){
@@ -8,6 +8,12 @@ void temp_humi_monitor(void *pvParameters){
     Wire.begin(11, 12);
     Serial.begin(115200);
     dht20.begin();
+
+    lcd.begin();
+    lcd.backlight(); 
+
+
+    SensorData_t currentData;
 
     while (1){
         /* code */
@@ -25,19 +31,35 @@ void temp_humi_monitor(void *pvParameters){
             Serial.println("Failed to read from DHT sensor!");
             temperature = humidity =  -1;
             //return;
+        }else{
+            currentData.temperature = temperature;
+            currentData.humidity = humidity;
         }
 
-        //Update global variables for temperature and humidity
-        glob_temperature = temperature;
-        glob_humidity = humidity;
 
-        // Print the results
+        if (sensorQueue != NULL) {
+            xQueueOverwrite(sensorQueue, &currentData);
+        }
+
         
         Serial.print("Humidity: ");
         Serial.print(humidity);
         Serial.print("%  Temperature: ");
         Serial.print(temperature);
         Serial.println("°C");
+
+
+
+
+
+        lcd.setCursor(0, 0);
+        lcd.print("Temp:");
+        lcd.print(temperature);
+        lcd.setCursor(0, 1);
+        lcd.print("Humi:");
+        lcd.print(humidity);
+        lcd.backlight(); 
+
         
         vTaskDelay(5000);
     }
