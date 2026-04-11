@@ -2,7 +2,7 @@
 
 // ----------- CONFIGURE THESE! -----------
 const char* coreIOT_Server = "app.coreiot.io";  
-const char* coreIOT_Token = "38nx373ms2cjb57ig7g7";   // Device Access Token
+const char* coreIOT_Token = "xyphyk4n7e9f3g5cg2uh";   // Device Access Token
 const int   mqttPort = 1883;
 // ----------------------------------------
 
@@ -15,11 +15,11 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect (username=token, password=empty)
-    //if (client.connect("ESP32Client", coreIOT_Token, NULL)) {
-    String clientId = "ESP32Client-";
-    clientId += String(random(0xffff), HEX);
+    if (client.connect("ESP32Client", coreIOT_Token, NULL)) {
+    // String clientId = "ESP32Client";
+    // clientId += String(random(0xffff), HEX);
 
-    if (client.connect(clientId.c_str())) {
+    // if (client.connect(clientId.c_str(), coreIOT_Token, "")) {
         
       Serial.println("connected to CoreIOT Server!");
       client.subscribe("v1/devices/me/rpc/request/+");
@@ -101,7 +101,8 @@ void setup_coreiot(){
 
   Serial.println(" Connected!");
 
-  client.setServer(CORE_IOT_SERVER.c_str(), CORE_IOT_PORT.toInt());
+  //client.setServer(CORE_IOT_SERVER.c_str(), CORE_IOT_PORT.toInt());
+  client.setServer(coreIOT_Server, mqttPort);
   client.setCallback(callback);
 
 }

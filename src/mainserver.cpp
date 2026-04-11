@@ -382,7 +382,7 @@ void connectToWiFi()
   Serial.print(wifi_ssid.c_str());
 
   Serial.print(" Password: ");
-  Serial.println(wifi_password.c_str());
+  Serial.print(wifi_password.c_str());
 }
 
 // ========== Main task ==========
@@ -407,7 +407,7 @@ void main_server_task(void *pvParameters)
         {
           Serial.println("Switching back to AP Mode...");
           startAP();
-          // BỎ setupServer() Ở ĐÂY
+          setupServer();
         }
       }
     }
@@ -419,6 +419,7 @@ void main_server_task(void *pvParameters)
       {
         Serial.print("\nSTA IP address: ");
         Serial.println(WiFi.localIP());
+        WiFi.mode(WIFI_STA);
         isWifiConnected = true; 
 
         xSemaphoreGive(xBinarySemaphoreInternet);
@@ -433,7 +434,7 @@ void main_server_task(void *pvParameters)
       { 
         Serial.println("\nWiFi connect failed! Back to AP.");
         startAP();
-        // BỎ setupServer() Ở ĐÂY
+        setupServer();
         connecting = false;
         isWifiConnected = false;
       }

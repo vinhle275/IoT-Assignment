@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include "global.h"
 #include <Adafruit_NeoPixel.h>
-
+#include <WiFi.h>
 
 
 #define NEO_PIN 45

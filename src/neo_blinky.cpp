@@ -89,7 +89,7 @@ void neo_blinky(void *pvParameters) {
 
 
 
-        if (uxSemaphoreGetCount(xBinarySemaphoreInternet) == 0) {
+        if (/*uxSemaphoreGetCount(xBinarySemaphoreInternet) == 0*/ WiFi.status() != WL_CONNECTED) {
             blinkInterval = pdMS_TO_TICKS(500);
             
             if ((xTaskGetTickCount() - lastToggleTime) >= blinkInterval) {
