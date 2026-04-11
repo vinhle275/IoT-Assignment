@@ -1,130 +1,144 @@
-// #include "coreiot.h"
+#include "coreiot.h"
 
-// // ----------- CONFIGURE THESE! -----------
-// const char* coreIOT_Server = "app.coreiot.io";  
-// const char* coreIOT_Token = "g7drm1amhd3dchr379xu";   // Device Access Token
-// const int   mqttPort = 1883;
-// // ----------------------------------------
+// ----------- CONFIGURE THESE! -----------
+const char* coreIOT_Server = "app.coreiot.io";  
+const char* coreIOT_Token = "xyphyk4n7e9f3g5cg2uh";   // Device Access Token
+const int   mqttPort = 1883;
+// ----------------------------------------
 
-// WiFiClient espClient;
-// PubSubClient client(espClient);
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 
-// void reconnect() {
-//   // Loop until we're reconnected
-//   while (!client.connected()) {
-//     Serial.print("Attempting MQTT connection...");
-//     // Attempt to connect (username=token, password=empty)
-//     //if (client.connect("ESP32Client", coreIOT_Token, NULL)) {
-//     String clientId = "ESP32Client-";
-//     clientId += String(random(0xffff), HEX);
+void reconnect() {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect (username=token, password=empty)
+    //if (client.connect("ESP32Client", coreIOT_Token, NULL)) {
+    String clientId = "ESP32Client-";
+    clientId += String(random(0xffff), HEX);
 
-//     if (client.connect(clientId.c_str())) {
+    if (client.connect(clientId.c_str())) {
         
-//       Serial.println("connected to CoreIOT Server!");
-//       client.subscribe("v1/devices/me/rpc/request/+");
-//       Serial.println("Subscribed to v1/devices/me/rpc/request/+");
+      Serial.println("connected to CoreIOT Server!");
+      client.subscribe("v1/devices/me/rpc/request/+");
+      Serial.println("Subscribed to v1/devices/me/rpc/request/+");
 
-//     } else {
-//       Serial.print("failed, rc=");
-//       Serial.print(client.state());
-//       Serial.println(" try again in 5 seconds");
-//       delay(5000);
-//     }
-//   }
-// }
-
-
-// void callback(char* topic, byte* payload, unsigned int length) {
-//   Serial.print("Message arrived [");
-//   Serial.print(topic);
-//   Serial.println("] ");
-
-//   // Allocate a temporary buffer for the message
-//   char message[length + 1];
-//   memcpy(message, payload, length);
-//   message[length] = '\0';
-//   Serial.print("Payload: ");
-//   Serial.println(message);
-
-//   // Parse JSON
-//   StaticJsonDocument<256> doc;
-//   DeserializationError error = deserializeJson(doc, message);
-
-//   if (error) {
-//     Serial.print("deserializeJson() failed: ");
-//     Serial.println(error.c_str());
-//     return;
-//   }
-
-//   const char* method = doc["method"];
-//   if (strcmp(method, "setStateLED") == 0) {
-//     // Check params type (could be boolean, int, or string according to your RPC)
-//     // Example: {"method": "setValueLED", "params": "ON"}
-//     const char* params = doc["params"];
-
-//     if (strcmp(params, "ON") == 0) {
-//       Serial.println("Device turned ON.");
-//       //TODO
-
-//     } else {   
-//       Serial.println("Device turned OFF.");
-//       //TODO
-
-//     }
-//   } else {
-//     Serial.print("Unknown method: ");
-//     Serial.println(method);
-//   }
-// }
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      delay(5000);
+    }
+  }
+}
 
 
-// void setup_coreiot(){
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.println("] ");
 
-//   //Serial.print("Connecting to WiFi...");
-//   //WiFi.begin(wifi_ssid, wifi_password);
-//   //while (WiFi.status() != WL_CONNECTED) {
+  // Allocate a temporary buffer for the message
+  char message[length + 1];
+  memcpy(message, payload, length);
+  message[length] = '\0';
+  Serial.print("Payload: ");
+  Serial.println(message);
+
+  // Parse JSON
+  StaticJsonDocument<256> doc;
+  DeserializationError error = deserializeJson(doc, message);
+
+  if (error) {
+    Serial.print("deserializeJson() failed: ");
+    Serial.println(error.c_str());
+    return;
+  }
+
+  const char* method = doc["method"];
+  if (strcmp(method, "setStateLED") == 0) {
+    // Check params type (could be boolean, int, or string according to your RPC)
+    // Example: {"method": "setValueLED", "params": "ON"}
+    const char* params = doc["params"];
+
+    if (strcmp(params, "ON") == 0) {
+      Serial.println("Device turned ON.");
+      //TODO
+
+    } else {   
+      Serial.println("Device turned OFF.");
+      //TODO
+
+    }
+  } else {
+    Serial.print("Unknown method: ");
+    Serial.println(method);
+  }
+}
+
+
+void setup_coreiot(){
+
+  //Serial.print("Connecting to WiFi...");
+  //WiFi.begin(wifi_ssid, wifi_password);
+  //while (WiFi.status() != WL_CONNECTED) {
   
-//   // while (isWifiConnected == false) {
-//   //   delay(500);
-//   //   Serial.print(".");
-//   // }
+  // while (isWifiConnected == false) {
+  //   delay(500);
+  //   Serial.print(".");
+  // }
 
-//   while(1){
-//     if (xSemaphoreTake(xBinarySemaphoreInternet, portMAX_DELAY)) {
-//       break;
-//     }
-//     delay(500);
-//     Serial.print(".");
-//   }
+  while(1){
+    if (xSemaphoreTake(xBinarySemaphoreInternet, portMAX_DELAY)) {
+      break;
+    }
+    delay(500);
+    Serial.print(".");
+  }
 
 
-//   Serial.println(" Connected!");
+  Serial.println(" Connected!");
 
-//   client.setServer(CORE_IOT_SERVER.c_str(), CORE_IOT_PORT.toInt());
-//   client.setCallback(callback);
+  client.setServer(CORE_IOT_SERVER.c_str(), CORE_IOT_PORT.toInt());
+  client.setCallback(callback);
 
-// }
+}
 
-// void coreiot_task(void *pvParameters){
+void coreiot_task(void *pvParameters){
 
-//     setup_coreiot();
+    setup_coreiot();
 
-//     while(1){
+    SensorData_t receivedData;
 
-//         if (!client.connected()) {
-//             reconnect();
-//         }
-//         client.loop();
+    while(1){
 
-//         // Sample payload, publish to 'v1/devices/me/telemetry'
-//         String payload = "{\"temperature\":" + String(glob_temperature) +  ",\"humidity\":" + String(glob_humidity) + "}";
+        if (!client.connected()) {
+            reconnect();
+        }
+        client.loop();
+
+
+        if (xQueuePeek(sensorQueue, &receivedData, 0) == pdPASS) {
+            
+            String payload = "{\"temperature\":" + String(receivedData.temperature) +  ",\"humidity\":" + String(receivedData.humidity) + "}";
+            
+            client.publish("v1/devices/me/telemetry", payload.c_str());
+            Serial.println("Published payload: " + payload);
+            
+        } else {
+            Serial.println("Sensor queue is empty or unavailable!");
+        }
+
+        // // Sample payload, publish to 'v1/devices/me/telemetry'
+        // String payload = "{\"temperature\":" + String(glob_temperature) +  ",\"humidity\":" + String(glob_humidity) + "}";
         
-//         client.publish("v1/devices/me/telemetry", payload.c_str());
+        // client.publish("v1/devices/me/telemetry", payload.c_str());
 
 
         
-//         Serial.println("Published payload: " + payload);
-//         vTaskDelay(10000);  // Publish every 10 seconds
-//     }
-// }
+        // Serial.println("Published payload: " + payload);
+        vTaskDelay(10000);  // Publish every 10 seconds
+    }
+}
