@@ -8,16 +8,16 @@
 #include "coreiot.h"
 
 // include task
-#include "task_check_info.h"
-#include "task_toogle_boot.h"
-#include "task_wifi.h"
-#include "task_webserver.h"
-#include "task_core_iot.h"
+// #include "task_check_info.h"
+// #include "task_toogle_boot.h"
+// #include "task_wifi.h"
+// #include "task_webserver.h"
+// #include "task_core_iot.h"
 
 void setup()
 {
   Serial.begin(115200);
-  check_info_File(0);
+  // check_info_File(0);
   
   sensorQueue = xQueueCreate(1, sizeof(SensorData_t));
 
@@ -32,16 +32,16 @@ void setup()
 
 void loop()
 {
-  if (check_info_File(1))
-  {
-    if (!Wifi_reconnect())
-    {
-      Webserver_stop();
-    }
-    else
-    {
-      //CORE_IOT_reconnect();
-    }
-  }
-  Webserver_reconnect();
+  // if (check_info_File(1))
+  // {
+  //   if (!Wifi_reconnect())
+  //   {
+  //     Webserver_stop();
+  //   }
+  //   else
+  //   {
+  //     //CORE_IOT_reconnect();
+  //   }
+  // }
+  // Webserver_reconnect();
 }

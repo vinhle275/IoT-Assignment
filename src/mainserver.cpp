@@ -330,7 +330,14 @@ void handleConnect()
 {
   wifi_ssid = server.arg("ssid");
   wifi_password = server.arg("pass");
-  server.send(200, "text/plain", "Connecting....");
+  
+  // Cập nhật luôn biến toàn cục để các Task khác có thể sử dụng (VD: task_core_iot)
+  WIFI_SSID = wifi_ssid;
+  WIFI_PASS = wifi_password;
+
+  // PHẢN HỒI CHO TRÌNH DUYỆT TRƯỚC khi thực hiện đổi mode Wi-Fi
+  server.send(200, "text/plain", "Đang kết nối tới " + wifi_ssid + ".... Vui lòng đợi 10s!");
+
   isAPMode = false;
   connecting = true;
   connect_start_ms = millis();
@@ -360,7 +367,9 @@ void startAP()
 
 void connectToWiFi()
 {
-  WiFi.mode(WIFI_STA);
+  // QUAN TRỌNG: Dùng WIFI_AP_STA để giữ mạng AP không bị rớt khi đang dò STA
+  WiFi.mode(WIFI_AP_STA);
+  
   if (wifi_password.isEmpty())
   {
     WiFi.begin(wifi_ssid.c_str());
@@ -373,7 +382,7 @@ void connectToWiFi()
   Serial.print(wifi_ssid.c_str());
 
   Serial.print(" Password: ");
-  Serial.print(wifi_password.c_str());
+  Serial.println(wifi_password.c_str());
 }
 
 // ========== Main task ==========
@@ -382,7 +391,7 @@ void main_server_task(void *pvParameters)
   pinMode(BOOT_PIN, INPUT_PULLUP);
 
   startAP();
-  setupServer();
+  setupServer(); // Chỉ gọi DUY NHẤT 1 lần ở đây
 
   while (1)
   {
@@ -391,41 +400,45 @@ void main_server_task(void *pvParameters)
     // BOOT Button to switch to AP Mode
     if (digitalRead(BOOT_PIN) == LOW)
     {
-      vTaskDelay(100);
+      vTaskDelay(100 / portTICK_PERIOD_MS);
       if (digitalRead(BOOT_PIN) == LOW)
       {
         if (!isAPMode)
         {
+          Serial.println("Switching back to AP Mode...");
           startAP();
-          setupServer();
+          // BỎ setupServer() Ở ĐÂY
         }
       }
     }
 
-    // STA Mode
+    // STA Mode Connection logic
     if (connecting)
     {
       if (WiFi.status() == WL_CONNECTED)
       {
-        Serial.print("STA IP address: ");
+        Serial.print("\nSTA IP address: ");
         Serial.println(WiFi.localIP());
-        isWifiConnected = true; // Internet access
+        isWifiConnected = true; 
 
         xSemaphoreGive(xBinarySemaphoreInternet);
 
         isAPMode = false;
         connecting = false;
+        
+        // (Tùy chọn) Nếu muốn tắt mạng của ESP32 sau khi kết nối thành công:
+        // WiFi.mode(WIFI_STA); 
       }
-      else if (millis() - connect_start_ms > 10000)
-      { // timeout 10s
-        Serial.println("WiFi connect failed! Back to AP.");
+      else if (millis() - connect_start_ms > 10000) // timeout 10s
+      { 
+        Serial.println("\nWiFi connect failed! Back to AP.");
         startAP();
-        setupServer();
+        // BỎ setupServer() Ở ĐÂY
         connecting = false;
         isWifiConnected = false;
       }
     }
 
-    vTaskDelay(20); // avoid watchdog reset
+    vTaskDelay(20 / portTICK_PERIOD_MS); // avoid watchdog reset
   }
 }

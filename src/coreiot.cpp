@@ -2,7 +2,7 @@
 
 // ----------- CONFIGURE THESE! -----------
 const char* coreIOT_Server = "app.coreiot.io";  
-const char* coreIOT_Token = "xyphyk4n7e9f3g5cg2uh";   // Device Access Token
+const char* coreIOT_Token = "38nx373ms2cjb57ig7g7";   // Device Access Token
 const int   mqttPort = 1883;
 // ----------------------------------------
 
