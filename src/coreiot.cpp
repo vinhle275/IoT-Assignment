@@ -8,31 +8,68 @@ const int   mqttPort = 1883;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-
-
 void reconnect() {
-  // Loop until we're reconnected
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-    // Attempt to connect (username=token, password=empty)
-    if (client.connect("ESP32Client", coreIOT_Token, NULL)) {
-    // String clientId = "ESP32Client";
-    // clientId += String(random(0xffff), HEX);
+  int mqttRetryCount = 0;
 
-    // if (client.connect(clientId.c_str(), coreIOT_Token, "")) {
-        
+  // Vòng lặp cho đến khi kết nối được MQTT
+  while (!client.connected()) {
+    
+    // 1. KIỂM TRA ĐIỀU KIỆN MẠNG NGẶT NGHÈO HƠN (Có sóng VÀ phải có IP thực)
+    if (WiFi.status() != WL_CONNECTED || WiFi.localIP() == IPAddress(0,0,0,0)) {
+      Serial.println("Mất mạng hoặc chưa có IP! Đang ép WiFi kết nối lại...");
+      WiFi.reconnect(); // Ép hệ thống mạng ESP32 khởi động lại quá trình xin IP
+      delay(3000);
+      continue; // Quay lại đầu vòng lặp chờ mạng lên
+    }
+
+    Serial.print("Attempting MQTT connection...");
+    
+    // 2. THỰC HIỆN KẾT NỐI MQTT
+    if (client.connect("ESP32Client", coreIOT_Token, NULL)) {
       Serial.println("connected to CoreIOT Server!");
       client.subscribe("v1/devices/me/rpc/request/+");
       Serial.println("Subscribed to v1/devices/me/rpc/request/+");
+      mqttRetryCount = 0; // Reset bộ đếm lỗi khi thành công
 
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
       delay(5000);
+      mqttRetryCount++;
+
+      // 3. CƠ CHẾ CHỐNG KẸT DNS (Anti-DNS-Lock)
+      // Nếu cố kết nối MQTT thất bại 5 lần liên tục (thường là do kẹt DNS sâu bên trong LwIP)
+      // Chúng ta sẽ "rút phích cắm" WiFi và cắm lại.
+      if (mqttRetryCount >= 5) {
+        Serial.println("Kẹt mạng cục bộ! Đang Reset toàn bộ module WiFi...");
+        WiFi.disconnect();
+        delay(1000);
+        WiFi.reconnect();
+        mqttRetryCount = 0;
+        delay(3000); // Chờ WiFi khởi động lại
+      }
     }
   }
 }
+// void reconnect() {
+//   // Loop until we're reconnected
+//   while (!client.connected()) {
+//     Serial.print("Attempting MQTT connection...");
+//     // Attempt to connect (username=token, password=empty)
+//     if (client.connect("ESP32Client", coreIOT_Token, NULL)) {
+//       Serial.println("connected to CoreIOT Server!");
+//       client.subscribe("v1/devices/me/rpc/request/+");
+//       Serial.println("Subscribed to v1/devices/me/rpc/request/+");
+
+//     } else {
+//       Serial.print("failed, rc=");
+//       Serial.print(client.state());
+//       Serial.println(" try again in 5 seconds");
+//       delay(5000);
+//     }
+//   }
+// }
 
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -91,17 +128,16 @@ void setup_coreiot(){
   // }
 
   while(1){
-    if (xSemaphoreTake(xBinarySemaphoreInternet, portMAX_DELAY)) {
+    if (xSemaphoreTake(xBinarySemaphoreInternet, /*portMAX_DELAY*/ 0)) {
       break;
     }
     delay(500);
-    Serial.print(".");
+    Serial.print("help_me");
   }
 
 
   Serial.println(" Connected!");
 
-  //client.setServer(CORE_IOT_SERVER.c_str(), CORE_IOT_PORT.toInt());
   client.setServer(coreIOT_Server, mqttPort);
   client.setCallback(callback);
 
@@ -109,9 +145,9 @@ void setup_coreiot(){
 
 void coreiot_task(void *pvParameters){
 
-    setup_coreiot();
+  SensorData_t receivedData;
 
-    SensorData_t receivedData;
+    setup_coreiot();
 
     while(1){
 
@@ -132,14 +168,6 @@ void coreiot_task(void *pvParameters){
             Serial.println("Sensor queue is empty or unavailable!");
         }
 
-        // // Sample payload, publish to 'v1/devices/me/telemetry'
-        // String payload = "{\"temperature\":" + String(glob_temperature) +  ",\"humidity\":" + String(glob_humidity) + "}";
-        
-        // client.publish("v1/devices/me/telemetry", payload.c_str());
-
-
-        
-        // Serial.println("Published payload: " + payload);
         vTaskDelay(10000);  // Publish every 10 seconds
     }
 }
