@@ -98,15 +98,19 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if (strcmp(method, "setStateLED") == 0) {
     // Check params type (could be boolean, int, or string according to your RPC)
     // Example: {"method": "setValueLED", "params": "ON"}
-    const char* params = doc["params"];
+    bool params = doc["params"];
 
-    if (strcmp(params, "ON") == 0) {
+    if (params == true) {
       Serial.println("Device turned ON.");
       //TODO
+      if (uxSemaphoreGetCount(xSemaphoreLedControl) == 0) {
+          xSemaphoreGive(xSemaphoreLedControl);
+      }
 
     } else {   
       Serial.println("Device turned OFF.");
       //TODO
+      xSemaphoreTake(xSemaphoreLedControl, 0);
 
     }
   } else {
@@ -129,6 +133,7 @@ void setup_coreiot(){
 
   while(1){
     if (xSemaphoreTake(xBinarySemaphoreInternet, /*portMAX_DELAY*/ 0)) {
+      xSemaphoreGive(xBinarySemaphoreInternet);
       break;
     }
     delay(500);

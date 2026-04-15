@@ -51,6 +51,8 @@ extern QueueHandle_t sensorQueue;
 // extern String CORE_IOT_SERVER;
 // extern String CORE_IOT_PORT;
 
+
+
 extern String ssid;
 extern String password;
 extern String wifi_ssid;
@@ -58,4 +60,7 @@ extern String wifi_password;
 
 extern boolean isWifiConnected;
 extern SemaphoreHandle_t xBinarySemaphoreInternet;
+
+//Task 6
+extern SemaphoreHandle_t xSemaphoreLedControl;
 #endif

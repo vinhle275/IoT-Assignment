@@ -89,13 +89,26 @@ void neo_blinky(void *pvParameters) {
 
 
 
-        if (/*uxSemaphoreGetCount(xBinarySemaphoreInternet) == 0*/ WiFi.status() != WL_CONNECTED) {
+        // Biến static để hạn chế in ra Serial quá nhiều (chỉ in mỗi 1 giây)
+        // static TickType_t lastDebugTime = 0;
+        // if (xTaskGetTickCount() - lastDebugTime > pdMS_TO_TICKS(1000)) {
+        //     if (xBinarySemaphoreInternet == NULL) {
+        //         Serial.println("[LED Task] LỖI: xBinarySemaphoreInternet chưa được khởi tạo (NULL)!");
+        //     } else {
+        //         Serial.printf("[LED Task] Trạng thái Semaphore Count: %d\n", uxSemaphoreGetCount(xBinarySemaphoreInternet));
+        //     }
+        //     lastDebugTime = xTaskGetTickCount();
+        // }
+
+        // Logic điều khiển LED
+        if (xBinarySemaphoreInternet == NULL || uxSemaphoreGetCount(xBinarySemaphoreInternet) == 0) {
+            // MẤT MẠNG -> Nhấp nháy
             blinkInterval = pdMS_TO_TICKS(500);
             
             if ((xTaskGetTickCount() - lastToggleTime) >= blinkInterval) {
                 ledState = !ledState;
                 if (ledState) {
-                    strip.setPixelColor(0, currentColor); // Hoặc bạn có thể hardcode strip.Color(255,255,255) ở đây nếu muốn nháy màu trắng
+                    strip.setPixelColor(0, currentColor); 
                 } else {
                     strip.setPixelColor(0, strip.Color(0, 0, 0)); 
                 }
@@ -103,11 +116,34 @@ void neo_blinky(void *pvParameters) {
                 lastToggleTime = xTaskGetTickCount();
             }
         } else {
-            // Có Wi-Fi -> Sáng cố định theo màu của độ ẩm, không nhấp nháy
+            // CÓ MẠNG -> Sáng cố định
             strip.setPixelColor(0, currentColor);
             strip.show();
-            ledState = true; // Cập nhật lại ledState để giữ logic đồng bộ nếu rớt mạng lại
+            ledState = true; 
         }
+
+
+
+
+        // if (/*uxSemaphoreGetCount(xBinarySemaphoreInternet) == 0*/ WiFi.status() != WL_CONNECTED) {
+        //     blinkInterval = pdMS_TO_TICKS(500);
+            
+        //     if ((xTaskGetTickCount() - lastToggleTime) >= blinkInterval) {
+        //         ledState = !ledState;
+        //         if (ledState) {
+        //             strip.setPixelColor(0, currentColor); // Hoặc bạn có thể hardcode strip.Color(255,255,255) ở đây nếu muốn nháy màu trắng
+        //         } else {
+        //             strip.setPixelColor(0, strip.Color(0, 0, 0)); 
+        //         }
+        //         strip.show();
+        //         lastToggleTime = xTaskGetTickCount();
+        //     }
+        // } else {
+        //     // Có Wi-Fi -> Sáng cố định theo màu của độ ẩm, không nhấp nháy
+        //     strip.setPixelColor(0, currentColor);
+        //     strip.show();
+        //     ledState = true; // Cập nhật lại ledState để giữ logic đồng bộ nếu rớt mạng lại
+        // }
 
 
         vTaskDelay(pdMS_TO_TICKS(10)); 

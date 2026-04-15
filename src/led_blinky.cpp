@@ -56,10 +56,28 @@ void led_blinky(void *pvParameters) {
                 break;
         }
 
-        if ((xTaskGetTickCount() - lastToggleTime) >= blinkInterval) {
-            ledState = !ledState;
-            digitalWrite(LED_GPIO, ledState);
-            lastToggleTime = xTaskGetTickCount();
+        // if ((xTaskGetTickCount() - lastToggleTime) >= blinkInterval) {
+        //     ledState = !ledState;
+        //     digitalWrite(LED_GPIO, ledState);
+        //     lastToggleTime = xTaskGetTickCount();
+        // }
+
+        if (xSemaphoreTake(xSemaphoreLedControl, 0) == pdTRUE) {
+            
+            // Lấy được Semaphore -> Trả lại ngay để giữ trạng thái ON cho vòng lặp sau
+            xSemaphoreGive(xSemaphoreLedControl); 
+            
+            // Xử lý chớp tắt LED bình thường
+            if ((xTaskGetTickCount() - lastToggleTime) >= blinkInterval) {
+                ledState = !ledState;
+                digitalWrite(LED_GPIO, ledState);
+                lastToggleTime = xTaskGetTickCount();
+            }
+        } else {
+            // Không lấy được Semaphore -> Lệnh OFF đang có hiệu lực
+            ledState = false;
+            digitalWrite(LED_GPIO, LOW); 
+            lastToggleTime = xTaskGetTickCount(); // Cập nhật thời gian
         }
 
         vTaskDelay(pdMS_TO_TICKS(10)); 
