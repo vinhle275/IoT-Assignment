@@ -15,5 +15,6 @@
         "initializer_list": "cpp",
         "span": "cpp",
         "regex": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "D:/Main/252/IoT/BTL/IoT-Assignment/lib/ArduinoJson/src"
 }
