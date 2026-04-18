@@ -296,49 +296,54 @@ String mainPage()
         return { tempStatus, humStatus };
       }
 
-      function updateSensors() {
-        fetch('/sensors')
+      function updateDisplay(temp, hum) {
+        document.getElementById('temp').innerText = temp.toFixed(1);
+        document.getElementById('hum').innerText = hum.toFixed(1);
+        
+        const { tempStatus, humStatus } = getStatus(temp, hum);
+        document.getElementById('tempStatus').innerText = tempStatus;
+        document.getElementById('humStatus').innerText = humStatus;
+
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2,'0') + ':' + 
+                       now.getMinutes().toString().padStart(2,'0') + ':' +
+                       now.getSeconds().toString().padStart(2,'0');
+
+        chartData.labels.push(timeStr);
+        chartData.temps.push(temp);
+        chartData.hums.push(hum);
+
+        if (chartData.labels.length > maxDataPoints) {
+          chartData.labels.shift();
+          chartData.temps.shift();
+          chartData.hums.shift();
+        }
+
+        tempChart.data.labels = chartData.labels;
+        tempChart.data.datasets[0].data = chartData.temps;
+        tempChart.update('none');
+
+        humChart.data.labels = chartData.labels;
+        humChart.data.datasets[0].data = chartData.hums;
+        humChart.update('none');
+      }
+
+      function fetchData() {
+        fetch('/sensors', { method: 'GET', cache: 'no-cache' })
           .then(res => res.json())
           .then(data => {
             const temp = parseFloat(data.temp);
             const hum = parseFloat(data.hum);
-            
-            document.getElementById('temp').innerText = temp.toFixed(1);
-            document.getElementById('hum').innerText = hum.toFixed(1);
-            
-            const { tempStatus, humStatus } = getStatus(temp, hum);
-            document.getElementById('tempStatus').innerText = tempStatus;
-            document.getElementById('humStatus').innerText = humStatus;
-
-            const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2,'0') + ':' + 
-                           now.getMinutes().toString().padStart(2,'0') + ':' +
-                           now.getSeconds().toString().padStart(2,'0');
-
-            chartData.labels.push(timeStr);
-            chartData.temps.push(temp);
-            chartData.hums.push(hum);
-
-            if (chartData.labels.length > maxDataPoints) {
-              chartData.labels.shift();
-              chartData.temps.shift();
-              chartData.hums.shift();
+            if (!isNaN(temp) && !isNaN(hum)) {
+              updateDisplay(temp, hum);
             }
-
-            tempChart.data.labels = chartData.labels;
-            tempChart.data.datasets[0].data = chartData.temps;
-            tempChart.update('none');
-
-            humChart.data.labels = chartData.labels;
-            humChart.data.datasets[0].data = chartData.hums;
-            humChart.update('none');
           })
-          .catch(e => console.error('Fetch error:', e));
+          .catch(e => console.error('Error:', e));
       }
 
       initCharts();
-      updateSensors();
-      setInterval(updateSensors, 1000);
+      fetchData();
+      setInterval(fetchData, 500);
     </script>
   </body>
   </html>
@@ -677,6 +682,12 @@ void handleScan()
   server.send(200, "application/json", json);
 }
 
+void handleStream()
+{
+  // Không dùng SSE vì nó chặn. Quay lại polling với JSON endpoint
+  server.send(200, "application/json", "{\"error\":\"Use /sensors endpoint\"}");
+}
+
 void handleSettings() { server.send(200, "text/html", settingsPage()); }
 
 void handleConnect()
@@ -707,6 +718,7 @@ void setupServer()
   server.on("/", HTTP_GET, handleRoot);
   server.on("/toggle", HTTP_GET, handleToggle);
   server.on("/sensors", HTTP_GET, handleSensors);
+  server.on("/stream", HTTP_GET, handleStream);
   server.on("/scan", HTTP_GET, handleScan);
   server.on("/settings", HTTP_GET, handleSettings);
   server.on("/connect", HTTP_GET, handleConnect);
