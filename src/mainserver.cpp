@@ -2,8 +2,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 
-bool led1_state = false;
-bool led2_state = false;
+// LED states removed as per request
 bool isAPMode = true;
 
 WebServer server(80);
@@ -22,8 +21,7 @@ String mainPage()
       temperature = receivedData.temperature;
       humidity = receivedData.humidity;
   }
-  String led1 = led1_state ? "ON" : "OFF";
-  String led2 = led2_state ? "ON" : "OFF";
+  // LED variable removed
 
   return R"rawliteral(<!DOCTYPE html>
 <html lang="vi">
@@ -75,11 +73,8 @@ String mainPage()
       <div class="value"><span id="hum">)rawliteral" + String(humidity) + R"rawliteral(</span><span style="font-size:24px;color:var(--text-muted)">%</span></div>
     </div>
     <div class="card">
-      <div class="label">Điều khiển thiết bị</div>
-      <div class="btn-group">
-        <button id="btn1" class="btn )rawliteral" + (led1_state ? "on" : "") + R"rawliteral(" onclick="toggleLED(1)">💡 LED 1</button>
-        <button id="btn2" class="btn )rawliteral" + (led2_state ? "on" : "") + R"rawliteral(" onclick="toggleLED(2)">💡 LED 2</button>
-      </div>
+      <div class="label">AI Dự đoán Thời tiết</div>
+      <div class="value" style="font-size: 36px;"><span id="prediction">)rawliteral" + current_weather_prediction + R"rawliteral(</span></div>
     </div>
   </div>
 
@@ -89,17 +84,7 @@ String mainPage()
   </div>
 
   <script>
-    function toggleLED(id) {
-      fetch('/toggle?led=' + id)
-        .then(r => r.json())
-        .then(d => {
-          const b1 = document.getElementById('btn1');
-          if(d.led1==='ON') b1.classList.add('on'); else b1.classList.remove('on');
-          
-          const b2 = document.getElementById('btn2');
-          if(d.led2==='ON') b2.classList.add('on'); else b2.classList.remove('on');
-        });
-    }
+    // Toggle function removed
 
     const ctx = document.getElementById('myChart').getContext('2d');
     const myChart = new Chart(ctx, {
@@ -132,6 +117,9 @@ String mainPage()
           const h = parseFloat(d.hum);
           document.getElementById('temp').innerText = t.toFixed(1);
           document.getElementById('hum').innerText = h.toFixed(1);
+          if (d.prediction) {
+            document.getElementById('prediction').innerText = d.prediction;
+          }
           
           const now = new Date();
           const timeStr = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
@@ -256,23 +244,7 @@ String settingsPage()
 // ========== Handlers ==========
 void handleRoot() { server.send(200, "text/html", mainPage()); }
 
-void handleToggle()
-{
-  int led = server.arg("led").toInt();
-  if (led == 1)
-  {
-    led1_state = !led1_state;
-    Serial.println("YOUR CODE TO CONTROL LED1");
-  }
-  else if (led == 2)
-  {
-    led2_state = !led2_state;
-    Serial.println("YOUR CODE TO CONTROL LED2");
-  }
-  server.send(200, "application/json",
-              "{\"led1\":\"" + String(led1_state ? "ON" : "OFF") +
-                  "\",\"led2\":\"" + String(led2_state ? "ON" : "OFF") + "\"}");
-}
+// handleToggle removed
 
 void handleSensors()
 {
@@ -284,7 +256,7 @@ void handleSensors()
       t = receivedData.temperature;
       h = receivedData.humidity;
   }
-  String json = "{\"temp\":" + String(t) + ",\"hum\":" + String(h) + "}";
+  String json = "{\"temp\":" + String(t) + ",\"hum\":" + String(h) + ",\"prediction\":\"" + current_weather_prediction + "\"}";
   server.send(200, "application/json", json);
 }
 
@@ -319,7 +291,7 @@ void handleConnect()
 void setupServer()
 {
   server.on("/", HTTP_GET, handleRoot);
-  server.on("/toggle", HTTP_GET, handleToggle);
+  // server.on("/toggle", HTTP_GET, handleToggle); removed
   server.on("/sensors", HTTP_GET, handleSensors);
   server.on("/settings", HTTP_GET, handleSettings);
   server.on("/scan", HTTP_GET, handleWifiScan);
