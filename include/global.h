@@ -44,6 +44,7 @@ typedef struct {
 } SensorData_t;
 
 extern QueueHandle_t sensorQueue;
+extern String current_weather_prediction;
 
 // extern String WIFI_SSID;
 // extern String WIFI_PASS;

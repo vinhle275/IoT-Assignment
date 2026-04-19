@@ -2,6 +2,7 @@
 // float glob_temperature = 0;
 // float glob_humidity = 0;
 QueueHandle_t sensorQueue = NULL;
+String current_weather_prediction = "Đang cập nhật...";
 
 // String WIFI_SSID;
 // String WIFI_PASS;

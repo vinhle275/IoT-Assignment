@@ -125,6 +125,8 @@ void tiny_ml_task(void *pvParameters)
                 }
             }
 
+            current_weather_prediction = weather_labels[best_idx];
+
             Serial.print("Predicted weather: ");
             Serial.println(weather_labels[best_idx]);
             Serial.println("====================================");
