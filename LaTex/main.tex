@@ -1,0 +1,227 @@
+\documentclass[a4paper,12pt]{article}
+
+%------------------------- packages -------------------------%
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage[unicode,hidelinks]{hyperref}    % for reference
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{array}
+\usepackage{fancyhdr}  % Ensure this is loaded last
+\usepackage{lastpage}
+\usepackage{setspace}
+\usepackage{longtable}
+\usetikzlibrary{calc}
+\usepackage{tabularx}
+\usepackage{array}  % For customizing row height
+\usepackage{multirow} %dùng cho phần vẽ bảng ở phần lý thuyết
+\usepackage[utf8]{inputenc}
+\usepackage[utf8]{vietnam}
+\usepackage{enumitem}
+\usepackage{adjustbox}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{float}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{caption}
+\usepackage{inconsolata}
+\usepackage{listings}
+\usepackage{tocloft} % for customizing TOC
+\usepackage{indentfirst} % Bắt buộc đoạn đầu tiên sau tiêu đề phải thụt đầu dòng
+\usepackage{subcaption}
+\setlength{\parindent}{1.5em} % Thiết lập độ rộng thụt vào (có thể chỉnh thành 1cm, 2em...)
+
+% for code and result
+\lstset{
+  breaklines=true,
+  breakatwhitespace=true,
+  basicstyle=\ttfamily\small, % Dùng font chữ nhỏ hơn
+  columns=fullflexible
+}
+\usepackage[svgnames]{xcolor} % Cung cấp nhiều màu sắc hơn
+\tcbset{
+  colback=AliceBlue,       % Màu nền xanh rất nhạt
+  colframe=SteelBlue,      % Màu viền xanh dương đậm
+  coltitle=MidnightBlue,   % Màu tiêu đề xanh đen
+  coltext=DarkSlateGray,   % Màu chữ chính
+  fonttitle=\bfseries      % Font chữ in đậm cho tiêu đề
+}
+
+
+%------------------------- set up -------------------------%
+% Set the margins
+\geometry{
+    left=2cm,
+    right=2cm,
+    top=2.5cm,
+    bottom=2.5cm,
+}
+
+%------------------------- header & footer -------------------------%
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.5pt}
+\setlength{\headheight}{30pt}
+\pagestyle{fancy}
+
+\fancyhead{}    % clear all header fields
+\fancyhead[L]{
+    \begin{tabular}{ll}
+        \begin{picture}(10,10)
+            \put(0,-7){\includegraphics[width=8mm]{pictures/hcmut.png}}
+        \end{picture}&
+        \begin{tabular}{l}
+            {\ttfamily Trường Đại học Bách Khoa Tp. Hồ Chí Minh} \\
+            {\ttfamily Khoa Khoa học và Kỹ thuật Máy tính} \\
+        \end{tabular} 	
+    \end{tabular}
+}
+
+\fancyfoot{}    % clear all footer fields
+
+\fancyfoot[R]{\footnotesize {\ttfamily Trang {\thepage}/\pageref{LastPage}}}
+
+%------------------------- title format settings -------------------------%
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+
+% Multi-layered Blue Border Definition
+\newcommand{\coverpageborder}{
+    \begin{tikzpicture}[remember picture,overlay,inner sep=0,outer sep=0]
+        \draw[blue!70!black,line width=4pt] 
+            ([xshift=-1.5cm,yshift=-2cm]current page.north east) coordinate (A)--([xshift=1.5cm,yshift=-2cm]current page.north west) coordinate(B)--([xshift=1.5cm,yshift=2cm]current page.south west) coordinate (C)--([xshift=-1.5cm,yshift=2cm]current page.south east) coordinate(D)--cycle;
+        \draw ([yshift=0.5cm,xshift=-0.5cm]A)-- ([yshift=0.5cm,xshift=0.5cm]B)--
+        ([yshift=-0.5cm,xshift=0.5cm]B) --([yshift=-0.5cm,xshift=-0.5cm]B)--([yshift=0.5cm,xshift=-0.5cm]C)--([yshift=0.5cm,xshift=0.5cm]C)--([yshift=-0.5cm,xshift=0.5cm]C)-- ([yshift=-0.5cm,xshift=-0.5cm]D)--([yshift=0.5cm,xshift=-0.5cm]D)--([yshift=0.5cm,xshift=0.5cm]D)--([yshift=-0.5cm,xshift=0.5cm]A)--([yshift=-0.5cm,xshift=-0.5cm]A)--([yshift=0.5cm,xshift=-0.5cm]A);
+        \draw ([yshift=-0.3cm,xshift=0.3cm]A)-- ([yshift=-0.3cm,xshift=-0.3cm]B)--
+        ([yshift=0.3cm,xshift=-0.3cm]B) --([yshift=0.3cm,xshift=0.3cm]B)--([yshift=-0.3cm,xshift=0.3cm]C)--([yshift=-0.3cm,xshift=-0.3cm]C)--([yshift=0.3cm,xshift=-0.3cm]C)-- ([yshift=0.3cm,xshift=0.3cm]D)--([yshift=-0.3cm,xshift=0.3cm]D)--([yshift=-0.3cm,xshift=-0.3cm]D)--([yshift=0.3cm,xshift=-0.3cm]A)--([yshift=0.3cm,xshift=0.3cm]A)--([yshift=-0.3cm,xshift=0.3cm]A);
+    \end{tikzpicture}
+}
+
+%------------------------- tocloft settings -------------------------%
+\renewcommand{\listfigurename}{DANH MỤC HÌNH ẢNH}
+
+
+\setlength{\cftbeforesecskip}{0pt} % Space before each section entry
+\setlength{\cftsecnumwidth}{2em}   % Width of the section number
+\setlength{\cftsubsecindent}{3em}  % Indentation for subsections
+\setlength{\cftsubsecnumwidth}{3em}% Width of the subsection number
+\setlength{\cftsubsubsecindent}{5em} % Indentation for subsubsections
+\setlength{\cftsubsubsecnumwidth}{4em} % Width of the subsubsection number
+
+%------------------------- body -------------------------%
+\begin{document}
+
+%-------------------- cover --------------------%
+\begin{titlepage}
+    \centering
+    
+    % Draw the cover page border
+    \coverpageborder
+    
+    % University and Department Info
+    \textbf{\large{ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}}\\[0.1cm]
+    \textbf{\large{TRƯỜNG ĐẠI HỌC BÁCH KHOA}}\\[0.1cm]
+    \textbf{\large{KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH}}\\[0.25cm]
+    
+    % Logo Positioning
+    \includegraphics[width=0.5\textwidth]{pictures/hcmut.png}\\[0.3cm]
+    
+    % Title and Subtitle
+    \textbf{\LARGE{BÁO CÁO BTL}}\\[0.2cm]
+    \textbf{\Large{Phát triển Ứng dụng Internet of Things}}\\[0.1cm]
+    \textbf{\Large{CO3037}}\\[0.6cm]
+    
+    % Group Info
+    \textbf{\large{Lớp: A01}}\\[0.2cm]
+    \textbf{\large{GVHD: Lê Trọng Nhân}}\\[0.2cm]
+    \begin{table}[h]
+    \renewcommand{\arraystretch}{1.5}  % Điều chỉnh chiều cao hàng (1.5 lần bình thường)
+    \centering
+    \begin{adjustbox}{max width=\textwidth} % Đảm bảo bảng vừa với chiều rộng trang
+    \begin{tabular}{|c|l|c|c|c|}
+            \hline
+            \textbf{STT} & \multicolumn{1}{c|}{\textbf{Họ và tên}} & \textbf{MSSV} & \textbf{Tên lớp} & \textbf{Tên ngành} \\ \hline
+            1 & Nguyễn Thanh Toàn & 2313492 & TN01 & Kỹ thuật máy tính \\ \hline
+            2 & Lê Công Vinh & 2313912 & TN01 & Kỹ thuật máy tính \\ \hline
+        \end{tabular}
+        \end{adjustbox}
+    \end{table}
+        
+    \vspace{2cm} % Adjust space between the table and the advisor section
+   
+    
+    % Date
+    \textbf{\large{THÀNH PHỐ HỒ CHÍ MINH, THÁNG 4 NĂM 2026}}
+\end{titlepage}
+
+
+%------------------------- re-apply fancy page style -------------------------%
+\pagestyle{fancy}
+
+%------------------------- sections -------------------------%
+
+
+\newpage
+\setstretch{1.25}
+\renewcommand{\baselinestretch}{1.25}
+
+%=================== BODY CONTENT ===================%
+
+% \newpage
+\setstretch{1.25}
+\tocloftpagestyle{fancy}
+\tableofcontents
+
+
+\newpage
+
+
+\cleardoublepage
+\addcontentsline{toc}{section}{\listfigurename} % Đưa danh mục hình ảnh vào mục lục
+\listoffigures
+\newpage
+
+
+% --- MAIN SECTION ---
+\section{Giới thiệu chung}
+\input{contents/Giới thiệu chung.tex}
+
+
+\section{Thiết kế hệ thống}
+\input{contents/Thiết kế hệ thống.tex}
+
+
+\section{Triển khai các Task}
+\subsection{Task 1: Đồng bộ hóa LED và cảm biến}
+\input{contents/Task1.tex}
+
+\subsection{Task 2: Thu thập và xử lý dữ liệu cảm biến}
+
+\subsection{Task 3: Giao tiếp Dashboard và điều khiển thiết bị}
+
+\subsection{Task 4: Tích hợp mô hình trí tuệ nhân tạo}
+
+\subsection{Task 5: Thiết kế và cấu hình Gateway}
+
+\subsection{Task 6: Phát triển giao diện người dùng}
+
+\subsection{Cải tiến}
+
+
+\section{Kết quả thực nghiệm và Đánh giá}
+\subsection{Hình ảnh thực tế mô hình}
+\subsection{Đánh giá độ chính xác của TinyML}
+\subsection{Kết quả kiểm thử}
+
+\section{Kết luận và Hướng phát triển}
+\subsection{Kết luận}
+\subsection{Hướng phát triển tương lai}
+
+\section*{Tài liệu tham khảo và Phụ lục}
+
+
+\end{document}
