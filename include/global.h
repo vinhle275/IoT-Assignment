@@ -43,8 +43,13 @@ typedef struct {
     float humidity;
 } SensorData_t;
 
+typedef struct {
+    char label[20];
+} WeatherData_t;
+
 extern QueueHandle_t sensorQueue;
-extern String current_weather_prediction;
+extern QueueHandle_t weatherQueue;
+//extern String current_weather_prediction;
 
 // extern String WIFI_SSID;
 // extern String WIFI_PASS;

@@ -10,18 +10,25 @@ WebServer server(80);
 unsigned long connect_start_ms = 0;
 bool connecting = false;
 
-
 String mainPage()
 {
   float temperature = 0.0;
   float humidity = 0.0;
+  String weatherLabel = "Calculating..."; // Biến cục bộ để hiển thị tạm thời
+  
   SensorData_t receivedData;
+  WeatherData_t receivedWeather;
 
+  // Lấy dữ liệu nhiệt ẩm
   if (sensorQueue != NULL && xQueuePeek(sensorQueue, &receivedData, 0) == pdPASS) {
       temperature = receivedData.temperature;
       humidity = receivedData.humidity;
   }
-  // LED variable removed
+  
+  // Lấy dữ liệu dự đoán thời tiết từ Queue
+  if (weatherQueue != NULL && xQueuePeek(weatherQueue, &receivedWeather, 0) == pdPASS) {
+      weatherLabel = String(receivedWeather.label);
+  }
 
   return R"rawliteral(<!DOCTYPE html>
 <html lang="vi">
@@ -74,7 +81,7 @@ String mainPage()
     </div>
     <div class="card">
       <div class="label">AI Dự đoán Thời tiết</div>
-      <div class="value" style="font-size: 36px;"><span id="prediction">)rawliteral" + current_weather_prediction + R"rawliteral(</span></div>
+      <div class="value" style="font-size: 36px;"><span id="prediction">)rawliteral" + weatherLabel + R"rawliteral(</span></div>
     </div>
   </div>
 
@@ -84,8 +91,6 @@ String mainPage()
   </div>
 
   <script>
-    // Toggle function removed
-
     const ctx = document.getElementById('myChart').getContext('2d');
     const myChart = new Chart(ctx, {
       type: 'line',
@@ -244,22 +249,30 @@ String settingsPage()
 // ========== Handlers ==========
 void handleRoot() { server.send(200, "text/html", mainPage()); }
 
-// handleToggle removed
-
 void handleSensors()
 {
   float t = 0.0;
   float h = 0.0;
-  SensorData_t receivedData;
+  String weatherLabel = "Calculating..."; // Biến cục bộ
 
+  SensorData_t receivedData;
+  WeatherData_t receivedWeather;
+
+  // Lấy dữ liệu nhiệt ẩm
   if (sensorQueue != NULL && xQueuePeek(sensorQueue, &receivedData, 0) == pdPASS) {
       t = receivedData.temperature;
       h = receivedData.humidity;
   }
-  String json = "{\"temp\":" + String(t) + ",\"hum\":" + String(h) + ",\"prediction\":\"" + current_weather_prediction + "\"}";
+  
+  // Lấy dữ liệu dự đoán thời tiết
+  if (weatherQueue != NULL && xQueuePeek(weatherQueue, &receivedWeather, 0) == pdPASS) {
+      weatherLabel = String(receivedWeather.label);
+  }
+
+  // Cập nhật chuỗi JSON
+  String json = "{\"temp\":" + String(t) + ",\"hum\":" + String(h) + ",\"prediction\":\"" + weatherLabel + "\"}";
   server.send(200, "application/json", json);
 }
-
 
 void handleWifiScan()
 {
@@ -274,7 +287,6 @@ void handleWifiScan()
 }
 
 void handleSettings() { server.send(200, "text/html", settingsPage()); }
-
 
 void handleConnect()
 {
@@ -291,7 +303,6 @@ void handleConnect()
 void setupServer()
 {
   server.on("/", HTTP_GET, handleRoot);
-  // server.on("/toggle", HTTP_GET, handleToggle); removed
   server.on("/sensors", HTTP_GET, handleSensors);
   server.on("/settings", HTTP_GET, handleSettings);
   server.on("/scan", HTTP_GET, handleWifiScan);

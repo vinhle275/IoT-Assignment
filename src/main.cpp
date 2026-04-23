@@ -20,6 +20,7 @@ void setup()
   // check_info_File(0);
   
   sensorQueue = xQueueCreate(1, sizeof(SensorData_t));
+  weatherQueue = xQueueCreate(1, sizeof(SensorData_t));
 
   xTaskCreate(led_blinky, "Task LED Blink", 2048, NULL, 2, NULL);
   xTaskCreate(neo_blinky, "Task NEO Blink", 2048, NULL, 2, NULL);

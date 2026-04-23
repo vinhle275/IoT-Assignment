@@ -2,6 +2,7 @@
 // float glob_temperature = 0;
 // float glob_humidity = 0;
 QueueHandle_t sensorQueue = NULL;
+QueueHandle_t weatherQueue = NULL;
 String current_weather_prediction = "Đang cập nhật...";
 
 // String WIFI_SSID;
@@ -12,8 +13,8 @@ String current_weather_prediction = "Đang cập nhật...";
 
 String ssid = "ESP32-YOUR NETWORK HERE!!!";
 String password = "12345678";
-String wifi_ssid = "abcde";
-String wifi_password = "123456789";
+String wifi_ssid = "P730";
+String wifi_password = "wifihuroi";
 boolean isWifiConnected = false;
 SemaphoreHandle_t xBinarySemaphoreInternet = xSemaphoreCreateBinary();
 

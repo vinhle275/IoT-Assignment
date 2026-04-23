@@ -149,6 +149,8 @@ void setup_coreiot() {
 
 void coreiot_task(void *pvParameters) {
   SensorData_t receivedData;
+  WeatherData_t receivedWeather; // Khai báo biến nhận weather
+  
   setup_coreiot();
 
   while(1) {
@@ -157,10 +159,19 @@ void coreiot_task(void *pvParameters) {
     }
     client.loop();
 
+    // Peek xem có dữ liệu nhiệt ẩm không
     if (xQueuePeek(sensorQueue, &receivedData, 0) == pdPASS) {
-        // Thêm trường latitude và longitude vào chuỗi JSON payload
+        
+        // Peek xem có dữ liệu ML không
+        String weatherStr = "Calculating...";
+        if (xQueuePeek(weatherQueue, &receivedWeather, 0) == pdPASS) {
+            weatherStr = String(receivedWeather.label);
+        }
+
+        // Thêm trường "weather" vào chuỗi JSON payload
         String payload = "{\"temperature\":" + String(receivedData.temperature) + 
                          ",\"humidity\":" + String(receivedData.humidity) + 
+                         ",\"weather\":\"" + weatherStr + "\"" +          // Thêm dữ liệu nhãn thời tiết
                          ",\"latitude\":" + String(FIXED_LAT, 6) + 
                          ",\"longitude\":" + String(FIXED_LON, 6) + 
                          ",\"token\":\"" + String(MQTT_PASS) + "\"}";

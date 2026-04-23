@@ -125,10 +125,12 @@ void tiny_ml_task(void *pvParameters)
                 }
             }
 
-            current_weather_prediction = weather_labels[best_idx];
+            WeatherData_t weatherData;
+            snprintf(weatherData.label, sizeof(weatherData.label), "%s", weather_labels[best_idx]);
+            xQueueOverwrite(weatherQueue, &weatherData); 
 
             Serial.print("Predicted weather: ");
-            Serial.println(weather_labels[best_idx]);
+            Serial.println(weatherData.label);
             Serial.println("====================================");
         }
         else
