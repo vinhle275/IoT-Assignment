@@ -1,0 +1,18 @@
+\subsection{Kết luận}
+Sau quá trình thực hiện dự án, nhóm đã xây dựng thành công một hệ thống IoT hoàn chỉnh trên nền tảng vi điều khiển ESP32 S3. Kết quả đạt được cho thấy sự kết hợp hiệu quả giữa các kỹ thuật lập trình nhúng hiện đại và khả năng kết nối điện toán đám mây. Các thành tựu chính của dự án bao gồm:
+\begin{itemize}
+    \item \textbf{Quản lý tác vụ thời gian thực:} Hệ thống vận hành ổn định nhờ việc áp dụng cơ chế Semaphore để điều phối các nhiệm vụ từ đọc dữ liệu cảm biến đến điều khiển thiết bị ngoại vi. Cách tiếp cận này giúp tối ưu hóa hiệu suất xử lý và loại bỏ triệt để việc sử dụng biến toàn cục trong toàn bộ chương trình.
+    \item \textbf{Linh hoạt trong điều khiển và cấu hình:} Web Server được thiết kế cho phép hệ thống tự động chuyển đổi giữa các chế độ mạng khác nhau. Người dùng có thể dễ dàng thiết lập thông số hoặc điều khiển thiết bị thông qua giao diện trực quan ngay trên trình duyệt web.
+    \item \textbf{Trí tuệ nhân tạo tại biên:} Nhóm đã hiện thực hóa việc phân loại trạng thái môi trường ngay trên phần cứng bằng mô hình TinyML. Điều này chứng minh khả năng xử lý thông minh của thiết bị nhúng mà không cần phụ thuộc hoàn toàn vào máy chủ bên ngoài.
+    \item \textbf{Tích hợp hệ sinh thái đám mây:} Dữ liệu môi trường được truyền tải liên tục và bảo mật lên máy chủ CoreIOT. Các tính năng mở rộng như cập nhật phần mềm từ xa và thông báo khẩn cấp qua email đã được triển khai đầy đủ theo yêu cầu kỹ thuật.
+\end{itemize}
+Dự án đã giúp các thành viên nắm vững quy trình phát triển một sản phẩm IoT thực tế, từ khâu thiết kế phần cứng đến lập trình phần mềm đa nhiệm.
+
+\subsection{Hướng phát triển tương lai}
+Dựa trên nền tảng sẵn có, hệ thống có thể được tiếp tục cải tiến và mở rộng theo các hướng chủ đạo như sau:
+\begin{itemize}
+    \item \textbf{Tối ưu hóa thuật toán học máy:} Nhóm dự kiến thu thập tập dữ liệu lớn hơn với nhiều biến số môi trường để huấn luyện các mô hình mạng nơ-ron sâu. Việc này sẽ giúp nâng cao độ chính xác khi dự báo các tình huống bất thường và giảm thiểu sai số trong các môi trường khắc nghiệt.
+    \item \textbf{Nâng cao hiệu quả sử dụng năng lượng:} Nghiên cứu và áp dụng các chế độ tiết kiệm điện chuyên sâu là hướng đi quan trọng để kéo dài thời gian hoạt động của thiết bị khi sử dụng nguồn pin. Hệ thống sẽ được lập trình để chỉ kích hoạt các module truyền thông khi có sự thay đổi đáng kể về dữ liệu.
+    \item \textbf{Mở rộng khả năng ứng dụng thực tế:} Hệ thống có thể tích hợp thêm các loại cảm biến đo nồng độ bụi mịn hoặc độ pH của đất để phục vụ cho các giải pháp giám sát môi trường đô thị và nông nghiệp công nghệ cao.
+    \item \textbf{Tăng cường bảo mật hệ thống:} Việc áp dụng các giao thức mã hóa dữ liệu đầu cuối và cơ chế xác thực đa lớp sẽ là ưu tiên hàng đầu. Điều này đảm bảo an toàn thông tin khi hệ thống được triển khai trong các mạng lưới quy mô lớn hoặc các khu vực nhạy cảm về dữ liệu.
+\end{itemize}
