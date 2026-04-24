@@ -1,3 +1,19 @@
 \subsection{Mục tiêu dự án}
+Dự án được thực hiện nhằm đạt được các mục tiêu then chốt về cả kỹ năng chuyên môn lẫn tư duy hệ thống trong lĩnh vực kỹ thuật nhúng:
+\begin{itemize}
+    \item \textbf{Làm chủ hệ điều hành thời gian thực:} Tiếp cận và vận hành thành thạo các cơ chế quản lý đa nhiệm trên nền tảng RTOS, từ đó tối ưu hóa việc phân phối tài nguyên hệ thống và đảm bảo tính đáp ứng tức thời cho các tác vụ ưu tiên.
+    \item \textbf{Kỹ thuật lập trình nhúng chuyên sâu:} Nâng cao kỹ năng lập trình hướng đối tượng và quản lý mã nguồn hiệu quả bằng cách áp dụng các cơ chế đồng bộ hóa dữ liệu hiện đại, thay thế hoàn toàn các phương pháp truyền dữ liệu truyền thống thông qua biến toàn cục để tăng tính đóng gói và an toàn cho hệ thống.
+    \item \textbf{Ứng dụng trí tuệ nhân tạo tại biên:} Nghiên cứu và hiện thực hóa các thuật toán học máy tối giản để xử lý dữ liệu ngay trên thiết bị nhúng. Mục tiêu là giúp hệ thống có khả năng tự đưa ra quyết định thông minh dựa trên dữ liệu cảm biến mà không cần phụ thuộc vào sức mạnh tính toán của máy chủ trung tâm.
+    \item \textbf{Xây dựng giải pháp IoT toàn diện:} Thiết kế một hệ sinh thái khép kín từ tầng thiết bị cuối đến tầng giao diện người dùng và hạ tầng lưu trữ đám mây. Dự án tập trung vào việc đảm bảo sự kết nối liên tục, bảo mật dữ liệu và khả năng tương tác linh hoạt giữa người dùng và phần cứng qua mạng không dây.
+    \item \textbf{Tư duy phát triển và mở rộng hệ thống:} Hình thành khả năng phân tích, cải tiến và nâng cấp các mã nguồn sẵn có để tạo ra những giải pháp công nghệ mới có tính ứng dụng cao, đáp ứng các tiêu chuẩn kỹ thuật khắt khe trong thực tế.
+\end{itemize}
+
 \subsection{Phạm vi thực hiện}
-\subsection{Phân công nhiệm vụ thành viên}
+Dự án được giới hạn và thực hiện dựa trên 6 nhiệm vụ cụ thể như sau:
+\begin{itemize}
+    \item \textbf{Nền tảng phát triển:} Toàn bộ quá trình lập trình và phát triển được thực hiện trên nền tảng vi điều khiển ESP32 S3 sử dụng công cụ PlatformIO hoặc tùy chọn MicroPython kết hợp với phần mềm Thonny.
+    \item \textbf{Giao tiếp cảm biến và hiển thị:} Thực hiện thu thập dữ liệu nhiệt độ và độ ẩm để hiển thị lên màn hình LCD thông qua chuẩn giao tiếp I2C. Hệ thống xử lý điều kiện để điều khiển LED đơn chớp tắt và thay đổi màu sắc LED NeoPixel dựa trên các ngưỡng môi trường, đồng thời sử dụng Semaphore để đồng bộ các trạng thái bình thường, cảnh báo hoặc nguy hiểm.
+    \item \textbf{Quản lý Web Server:} Thiết kế lại giao diện Web Server hỗ trợ điều khiển ít nhất 2 thiết bị. Hệ thống hoạt động với chế độ Access Point cho lần thiết lập đầu tiên và chuyển sang chế độ Station cho hoạt động bình thường, đi kèm tính năng khôi phục cài đặt gốc khi cần thiết.
+    \item \textbf{Triển khai TinyML:} Xây dựng mã nguồn để thu thập dữ liệu và gán nhãn cho các trạng thái bất thường của nhiệt độ hoặc độ ẩm. Nhóm thực hiện huấn luyện và chạy mô hình phân tích trực tiếp trên thiết bị để đánh giá độ chính xác của hệ thống.
+    \item \textbf{Tích hợp điện toán đám mây:} Vi điều khiển ESP32 S3 ở chế độ Station sẽ kết nối và đẩy dữ liệu môi trường lên hệ thống CoreIOT thông qua mã thông báo xác thực riêng biệt. Dự án ứng dụng các mẫu thiết kế bắt buộc từ CoreIOT bao gồm tính năng cập nhật phần mềm không dây và gửi email cảnh báo tự động.
+\end{itemize}
