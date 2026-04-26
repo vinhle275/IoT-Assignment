@@ -1,6 +1,6 @@
 \subsubsection{Dashboard}
 
-Giao diện giám sát (Dashboard) được thiết kế trên nền tảng ThingsBoard nhằm mục đích trực quan hóa dữ liệu thời gian thực từ các thiết bị ESP32, giúp người dùng dễ dàng theo dõi trạng thái môi trường và đưa ra các quyết định điều khiển kịp thời.
+Dashboard được thiết kế trên nền tảng Collect nhằm mục đích trực quan hóa dữ liệu thời gian thực từ các thiết bị ESP32, giúp người dùng dễ dàng theo dõi trạng thái môi trường và đưa ra các quyết định điều khiển kịp thời.
 
 \begin{figure}[H]
     \centering
@@ -17,36 +17,17 @@ Giao diện giám sát (Dashboard) được thiết kế trên nền tảng Thin
 
 
 
-Dưới đây là các đặc tính kỹ thuật và cấu trúc thành phần của Dashboard "IoT Assignment\_002":
+Dưới đây là các đặc tính kỹ thuật và cấu trúc thành phần của Dashboard "IoT Assignment\_002" với cấu hình chung gồm:
 
 \begin{itemize}
-    \item \textbf{Cấu hình chung và Trải nghiệm người dùng:}
-    \begin{itemize}
-        \item \textit{Tiêu đề và Nhận diện:} Dashboard được đặt tên là "IoT Assignment\_002" với hình nền minh họa về nhiệt độ và độ ẩm (\texttt{temperature-and-humidity.jpg}), tạo sự trực quan ngay khi truy cập.
-        \item \textit{Tính tương thích:} Giao diện được tối ưu hóa để hiển thị trên cả trình duyệt máy tính và thiết bị di động, đảm bảo tính linh hoạt trong việc giám sát từ xa.
-    \end{itemize}
-
-    \item \textbf{Cơ chế cập nhật dữ liệu thời gian thực:}
-    \begin{itemize}
-        \item Hệ thống sử dụng cơ chế \textbf{Real-time update} với khoảng thời gian cập nhật (Interval) là 1000ms (1 giây). Tần suất này đảm bảo dữ liệu hiển thị trên các biểu đồ và thẻ số liệu luôn sát với giá trị thực tế mà cảm biến đo được tại hiện trường.
-        \item Cửa sổ thời gian mặc định (Timewindow) được cấu hình để hiển thị dữ liệu lịch sử trong vòng 60.000ms (1 phút) gần nhất, giúp người dùng theo dõi được xu hướng biến động ngắn hạn của các thông số.
-    \end{itemize}
-
-    \item \textbf{Các thành phần Widget chính:}
-    \begin{itemize}
-        \item \textit{Widget hiển thị giá trị tức thời (Latest values):} Sử dụng loại Widget "latest" để trình bày các thông số quan trọng như nhiệt độ và độ ẩm dưới dạng các thẻ số điện tử. Widget này được cấu hình với kích thước hiển thị lớn ($11 \times 11$ đơn vị lưới) giúp làm nổi bật thông tin trọng tâm.
-        \item \textit{Hệ thống cảnh báo và trạng thái:} Dashboard tích hợp các chỉ số về trạng thái kết nối của thiết bị, cho phép quản trị viên nhận biết ngay lập tức nếu có node cảm biến nào bị mất tín hiệu hoặc gặp sự cố phần cứng.
-    \end{itemize}
+    \item \textit{Giao diện mặc định:} Dashboard được đặt tên là "IoT Assignment\_002" với giao diện mặc định thể hiện các device kết nối với Gateway và vị trí của chúng trên bản đồ, nhằm cho mọi người biết số lượng device cũng như phân bố của chúng.
+    \item \textit{Giao diện dữ liệu được gửi từ các device:} Giao diện thứ hai được thể hiện cách thông tin thu thập được từ device như vị trí, nhiệt độ, độ ẩm, kết quả của TinyML. Cùng với đó là sự xuất hiện của một Button gửi tín hiệu RPC về cho ESP32, theo như thiết kế đây là nơi sẽ quyết định LED đơn có bật hay tắt hay không.
 \end{itemize}
-
-\textbf{Đánh giá thiết kế:} 
-Dashboard được xây dựng với tư duy tinh gọn nhưng đầy đủ thông tin. Việc thiết lập tần suất lấy mẫu 1 giây/lần kết hợp với các Widget hiển thị giá trị tức thời giúp hệ thống đáp ứng tốt các yêu cầu về giám sát khắt khe trong môi trường IoT công nghiệp hoặc nhà thông minh. Sự kết hợp giữa Dashboard trực quan và Rule Chain xử lý tự động tạo nên một hệ thống quản lý dữ liệu khép kín và hiệu quả.
-
 
 
 \subsubsection{Cơ chế gửi email - Rule chain}
 
-Hệ thống điều khiển và giám sát sử dụng công cụ Rule Chain của ThingsBoard để thiết lập một quy trình xử lý dữ liệu tự động (pipeline). Quy trình này không chỉ dừng lại ở việc lưu trữ dữ liệu mà còn thực hiện các phép tính thống kê và gửi báo cáo định kỳ qua Email cho người quản lý. 
+Hệ thống điều khiển và giám sát sử dụng công cụ Rule Chain của CoreIOT để thiết lập một quy trình xử lý dữ liệu tự động. Quy trình này không chỉ dừng lại ở việc lưu trữ dữ liệu mà còn thực hiện các phép tính thống kê và gửi báo cáo định kỳ qua Email cho người quản lý. 
 
 \begin{figure}[H]
     \centering
@@ -87,8 +68,8 @@ Dưới đây là phân tích chi tiết các khối chức năng (Nodes) trong 
 
     \item \textbf{Khối thực thi gửi Email:}
     \begin{itemize}
-        \item \textit{To email:} Thiết lập các thông số Header cho email như người gửi (info@testmail.org), người nhận (vinh.le020705@hcmut.edu.vn) và tiêu đề thư.
-        \item \textit{Send email:} Sử dụng giao thức SMTP qua server \texttt{smtp.gmail.com} (Port 587) cùng với App Password để thực hiện việc gửi thư đi thực tế qua internet.
+        \item \textit{To email:} Thiết lập các thông số Header cho email như người gửi, người nhận và tiêu đề thư.
+        \item \textit{Send email:} Thực hiện việc gửi thư đi thực tế qua internet.
     \end{itemize}
 \end{itemize}
 

@@ -1,3 +1,37 @@
 \subsection{Kiến trúc hệ thống}
+Hệ thống được xây dựng xoay quanh vi điều khiển ESP32-S3 gắn sẵn trên board mạch, đóng vai trò là khối xử lý trung tâm. Với cấu hình phần cứng tương đối gọn nhẹ, thiết bị thực hiện đồng thời nhiều nhiệm vụ như đọc dữ liệu từ bộ cảm biến nhiệt độ -- độ ẩm, hiển thị thông tin lên LCD, vận hành Web Server để cấu hình mạng, chạy mô hình TinyML để dự đoán trạng thái thời tiết và gửi dữ liệu lên nền tảng cloud.
+
+Về mặt tổ chức chức năng, hệ thống có thể chia thành ba lớp chính. Lớp thứ nhất là lớp cảm nhận, bao gồm bộ cảm biến nhiệt độ và độ ẩm. Lớp thứ hai là lớp xử lý tại biên, do ESP32-S3 đảm nhiệm, bao gồm xử lý dữ liệu, điều khiển LCD, vận hành Web Server và suy luận TinyML. Lớp thứ ba là lớp dịch vụ mạng, trong đó dữ liệu sau xử lý được đồng bộ lên ThingsBoard để trực quan hóa, lưu trữ và kích hoạt các tác vụ tự động như gửi email. Cách tổ chức này giúp hệ thống vừa giữ được khả năng phản hồi nhanh trên thiết bị, vừa có thể mở rộng lên mức giám sát từ xa.
+
 \subsection{Sơ đồ khối và luồng dữ liệu}
+Luồng dữ liệu của hệ thống được thực hiện theo trình tự như sau:
+\begin{enumerate}
+    \item Bộ cảm biến thu thập dữ liệu nhiệt độ và độ ẩm của môi trường.
+    \item Dữ liệu được truyền về ESP32 để xử lý và phân phối cho các tác vụ nội bộ.
+    \item Thông tin đo được được hiển thị trực tiếp lên LCD và biểu đạt bằng các trạng thái của LED đơn và LED NeoPixel để người dùng quan sát tại chỗ.
+    \item Đồng thời, nhiệt độ và độ ẩm được chuẩn hóa và đưa vào mô hình TinyML để suy luận trạng thái thời tiết.
+    \item Kết quả suy luận cùng dữ liệu cảm biến được hiển thị trên Web Server và gửi tiếp lên app.coreiot.io để phục vụ giám sát từ xa.
+\end{enumerate}
+
+Điểm đáng chú ý của luồng xử lý này là toàn bộ phần đo đạc, hiển thị và suy luận quan trọng đều được thực hiện ngay trên ESP32. Nhờ đó, hệ thống không cần phụ thuộc hoàn toàn vào máy chủ ngoài để đưa ra kết quả tức thời. Trong khi đó, nền tảng cloud chỉ đảm nhiệm vai trò mở rộng như lưu trữ, trực quan hóa lịch sử và thông báo, giúp hệ thống có được cả tính thời gian thực lẫn khả năng giám sát từ xa.
+
 \subsection{Danh sách linh kiện phần cứng}
+Do mô hình được thiết kế theo hướng đơn giản và dễ triển khai, phần cứng sử dụng không nhiều. Bảng dưới đây liệt kê các thành phần chính có trong hệ thống.
+
+\begin{table}[H]
+    \centering
+    \label{tab:hardware-list}
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabularx}{\textwidth}{|>{\centering\arraybackslash}p{0.5cm}|>{\raggedright\arraybackslash}X|>{\centering\arraybackslash}p{1.5cm}|>{\raggedright\arraybackslash}p{5.2cm}|}
+        \hline
+        \textbf{STT} & \textbf{Linh kiện} & \textbf{Số lượng} & \textbf{Vai trò} \\ \hline
+        1 & ESP32 gắn sẵn trên board & 1 & Vi điều khiển trung tâm, xử lý dữ liệu, vận hành Web Server, chạy TinyML và kết nối CoreIOT \\ \hline
+        2 & DHT20 & 1 & Thu thập dữ liệu môi trường để đưa vào hệ thống giám sát và mô hình TinyML \\ \hline
+        3 & LCD & 1 & Hiển thị trực tiếp các thông số môi trường và trạng thái hệ thống tại thiết bị \\ \hline
+        4 & Dây bus kết nối & 1 bộ & Kết nối các khối phần cứng và truyền tín hiệu giữa cảm biến, LCD và board ESP32 \\ \hline
+        5 & Dây Type-C & 1 & Cấp nguồn và nạp chương trình cho board ESP32 \\ \hline
+    \end{tabularx}
+    \caption{Danh sách linh kiện phần cứng sử dụng trong mô hình}
+\end{table}
+
+Nhìn chung, cấu hình phần cứng của mô hình khá tối giản nhưng vẫn đủ để hiện thực một hệ thống IoT hoàn chỉnh. Việc chỉ sử dụng một số linh kiện cơ bản giúp hệ thống dễ lắp ráp, dễ kiểm thử và phù hợp với mục tiêu minh họa rõ quá trình tích hợp giữa cảm biến, vi điều khiển, giao diện người dùng và mô hình học máy nhúng.

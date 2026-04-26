@@ -1,0 +1,7 @@
+\subsubsection{Mô hình phần cứng sau tích hợp}
+Sau khi hoàn thiện toàn bộ các task, hệ thống được tích hợp thành một mô hình IoT hoàn chỉnh xoay quanh vi điều khiển ESP32. Thiết bị trung tâm thực hiện đồng thời nhiều vai trò: thu thập dữ liệu từ cảm biến nhiệt độ và độ ẩm, điều khiển các phần tử hiển thị cục bộ, vận hành Web Server để cấu hình mạng và giám sát tại chỗ, chạy mô hình TinyML để phân loại trạng thái thời tiết, đồng thời gửi dữ liệu lên nền tảng ThingsBoard để phục vụ giám sát từ xa.
+
+Về phần cứng, mô hình bao gồm cảm biến môi trường DHT, màn hình LCD giao tiếp I2C, LED đơn, dải LED RGB và khối kết nối Wi-Fi tích hợp sẵn trên ESP32. Cách bố trí này cho phép người dùng quan sát trạng thái hệ thống dưới nhiều lớp giao diện khác nhau: trực tiếp trên thiết bị, trên giao diện web nội bộ và trên Dashboard đám mây. Nhờ đó, hệ thống vừa đảm bảo tính trực quan khi vận hành tại chỗ, vừa đáp ứng được yêu cầu giám sát từ xa trong môi trường IoT thực tế.
+
+\subsubsection{Đặc điểm vận hành quan sát được}
+Trong quá trình chạy thử, mô hình cho thấy khả năng hoạt động ổn định giữa các tác vụ song song. Dữ liệu nhiệt độ và độ ẩm được cập nhật liên tục; LCD và hệ thống LED phản hồi đúng với các ngưỡng đã cấu hình; Web Server cho phép truy cập nhanh để theo dõi trạng thái và cấu hình mạng; còn nền tảng cloud tiếp nhận dữ liệu gần thời gian thực để hiển thị biểu đồ và gửi email cảnh báo. Điều này cho thấy kiến trúc hệ thống không chỉ đúng về mặt chức năng đơn lẻ mà còn đảm bảo được tính đồng bộ sau khi tích hợp.

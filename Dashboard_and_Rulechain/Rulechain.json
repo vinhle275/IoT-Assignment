@@ -1,0 +1,589 @@
+{
+  "ruleChain": {
+    "name": "Gateway",
+    "type": "CORE",
+    "firstRuleNodeId": null,
+    "root": false,
+    "debugMode": false,
+    "configuration": null,
+    "additionalInfo": {
+      "description": ""
+    }
+  },
+  "metadata": {
+    "version": 51,
+    "firstNodeIndex": 0,
+    "nodes": [
+      {
+        "type": "org.thingsboard.rule.engine.profile.TbDeviceProfileNode",
+        "name": "device profile node",
+        "debugSettings": {
+          "failuresEnabled": false,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 1,
+        "configuration": {
+          "persistAlarmRulesState": false,
+          "fetchAlarmRulesStateOnStart": false
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 86,
+          "layoutY": 484
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbMsgTypeSwitchNode",
+        "name": "Message Type Switch",
+        "debugSettings": {
+          "failuresEnabled": false,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "version": 0
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 384,
+          "layoutY": 487
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.telemetry.TbMsgAttributesNode",
+        "name": "Save Shared Attributes",
+        "debugSettings": {
+          "failuresEnabled": false,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 3,
+        "configuration": {
+          "processingSettings": {
+            "type": "ON_EVERY_MESSAGE"
+          },
+          "scope": "SHARED_SCOPE",
+          "notifyDevice": false,
+          "sendAttributesUpdatedNotification": false,
+          "updateAttributesOnlyOnValueChange": false
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 898,
+          "layoutY": 338
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.telemetry.TbMsgTimeseriesNode",
+        "name": "Save TimeSeries",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 1776587446482
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 1,
+        "configuration": {
+          "defaultTTL": 0,
+          "useServerTs": false,
+          "processingSettings": {
+            "type": "ON_EVERY_MESSAGE"
+          }
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 899,
+          "layoutY": 449
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.action.TbLogNode",
+        "name": "Log Other",
+        "debugSettings": {
+          "failuresEnabled": false,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return '\\nIncoming message:\\n' + JSON.stringify(msg) + '\\nIncoming metadata:\\n' + JSON.stringify(metadata);",
+          "tbelScript": "return '\\nIncoming message:\\n' + JSON.stringify(msg) + '\\nIncoming metadata:\\n' + JSON.stringify(metadata);"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 903,
+          "layoutY": 633
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCRequestNode",
+        "name": "RPC Call Request",
+        "debugSettings": {
+          "failuresEnabled": false,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "timeoutInSeconds": 60
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 903,
+          "layoutY": 717
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.action.TbLogNode",
+        "name": "Log RPC from Devices",
+        "debugSettings": {
+          "failuresEnabled": false,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return '\\nIncoming message:\\n' + JSON.stringify(msg) + '\\nIncoming metadata:\\n' + JSON.stringify(metadata);",
+          "tbelScript": "return '\\nIncoming message:\\n' + JSON.stringify(msg) + '\\nIncoming metadata:\\n' + JSON.stringify(metadata);"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 900,
+          "layoutY": 549
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Active",
+        "debugSettings": {
+          "failuresEnabled": false,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    //remove prevAlarmDetails from metadata\n    delete metadata.prevAlarmDetails;\n    //now metadata is the same as it comes IN this rule node\n}\n\n\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    //remove prevAlarmDetails from metadata\n    metadata.remove('prevAlarmDetails');\n    //now metadata is the same as it comes IN this rule node\n}\n\n\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "active",
+          "severity": "CRITICAL",
+          "propagate": true,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToOwnerHierarchy": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 900,
+          "layoutY": 251
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.action.TbClearAlarmNode",
+        "name": "Not Active",
+        "debugSettings": {
+          "failuresEnabled": false,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    //remove prevAlarmDetails from metadata\n    delete metadata.prevAlarmDetails;\n    //now metadata is the same as it comes IN this rule node\n}\n\n\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    //remove prevAlarmDetails from metadata\n    metadata.remove('prevAlarmDetails');\n    //now metadata is the same as it comes IN this rule node\n}\n\n\nreturn details;",
+          "alarmType": "inactive"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 895,
+          "layoutY": 154
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "check 30s",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 1776586789738
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "// Biến metadata.ss_last_email_time do node Get Attributes phía trước truyền vào\r\n// Nếu chưa từng gửi (lần đầu tiên), nó sẽ trả về 0.\r\nvar lastTime = metadata.ss_last_email_time ? parseInt(metadata.ss_last_email_time) : 0;\r\nvar currentTime = new Date().getTime();\r\n\r\n// Kiểm tra xem thời điểm hiện tại đã cách lần cuối gửi >= 60,000 ms chưa\r\nreturn (currentTime - lastTime) >= 30000;",
+          "tbelScript": "return msg.temperature > 20;"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1428,
+          "layoutY": 392
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.metadata.TbGetTelemetryNode",
+        "name": "Collect data",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 1776586789738
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 2,
+        "configuration": {
+          "latestTsKeyNames": [
+            "temperature",
+            "humidity"
+          ],
+          "aggregation": "NONE",
+          "fetchMode": "ALL",
+          "orderBy": "ASC",
+          "limit": 1000,
+          "useMetadataIntervalPatterns": false,
+          "startIntervalPattern": "",
+          "endIntervalPattern": "",
+          "startInterval": 30,
+          "startIntervalTimeUnit": "SECONDS",
+          "endInterval": 1,
+          "endIntervalTimeUnit": "SECONDS"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1611,
+          "layoutY": 482
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "Check has data",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 1776588427294
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "// Trích xuất dữ liệu từ metadata\r\nvar tempData = metadata.temperature ? JSON.parse(metadata.temperature) : [];\r\nvar humData = metadata.humidity ? JSON.parse(metadata.humidity) : [];\r\n\r\n// Tổng số lượng dữ liệu thu thập được trong 30 giây qua (chỉ còn nhiệt độ và độ ẩm)\r\nvar totalDataCount = tempData.length + humData.length;\r\n\r\n// Nếu có dữ liệu -> Trả về True để đi tiếp tới node gửi mail\r\nreturn totalDataCount > 0;",
+          "tbelScript": "return msg.temperature > 20;"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1773,
+          "layoutY": 577
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.metadata.TbGetAttributesNode",
+        "name": "Originator attributes",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 1776586789738
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 1,
+        "configuration": {
+          "tellFailureIfAbsent": false,
+          "fetchTo": "METADATA",
+          "clientAttributeNames": [],
+          "latestTsKeyNames": [],
+          "serverAttributeNames": [
+            "last_email_time"
+          ],
+          "sharedAttributeNames": [],
+          "getLatestValueWithTs": false
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1264,
+          "layoutY": 465
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.telemetry.TbMsgAttributesNode",
+        "name": "Save time",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 1776586789738
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 3,
+        "configuration": {
+          "processingSettings": {
+            "type": "ON_EVERY_MESSAGE"
+          },
+          "scope": "SERVER_SCOPE",
+          "notifyDevice": false,
+          "sendAttributesUpdatedNotification": false,
+          "updateAttributesOnlyOnValueChange": true
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1807,
+          "layoutY": 202
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "update Timestamp",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 1776587071457
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "return {\r\n    msg: { \"last_email_time\": new Date().getTime() },\r\n    metadata: metadata,\r\n    msgType: \"POST_ATTRIBUTES_REQUEST\"\r\n};",
+          "tbelScript": "return {msg: msg, metadata: metadata, msgType: msgType};"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1620,
+          "layoutY": 306
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "esp32",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 1776587408898
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "// Chỉ cho phép các thiết bị có tên bắt đầu bằng \"ESP32\" đi tiếp\r\nreturn metadata.deviceName.startsWith('ESP32');",
+          "tbelScript": "return msg.temperature > 20;"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1125,
+          "layoutY": 387
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "Format HTML Email",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "// 1. Lấy và parse dữ liệu từ metadata một cách an toàn\r\nvar tempData = metadata.temperature ? JSON.parse(metadata.temperature) : [];\r\nvar humData = metadata.humidity ? JSON.parse(metadata.humidity) : [];\r\nvar lightData = metadata.light ? JSON.parse(metadata.light) : [];\r\n\r\n// 2. Hàm tính giá trị trung bình\r\nfunction getAverage(arr) {\r\n    if (!arr || arr.length === 0) return \"\";\r\n    var sum = 0;\r\n    for (var i = 0; i < arr.length; i++) {\r\n        sum += parseFloat(arr[i].value);\r\n    }\r\n    return (sum / arr.length).toFixed(2); // Làm tròn 2 chữ số thập phân\r\n}\r\n\r\n// 3. Hàm tính giá trị trung vị\r\nfunction getMedian(arr) {\r\n    if (!arr || arr.length === 0) return \"\";\r\n    var values = [];\r\n    for (var i = 0; i < arr.length; i++) {\r\n        values.push(parseFloat(arr[i].value));\r\n    }\r\n    // Sắp xếp mảng tăng dần\r\n    values.sort(function(a, b) { return a - b; });\r\n    var half = Math.floor(values.length / 2);\r\n    \r\n    if (values.length % 2 === 0) {\r\n        return ((values[half - 1] + values[half]) / 2.0).toFixed(2);\r\n    }\r\n    return values[half].toFixed(2);\r\n}\r\n\r\n// 4. Hàm format thời gian từ chuỗi timestamp (ts) của ThingsBoard\r\nfunction formatTime(ts) {\r\n    var date = new Date(ts);\r\n    var h = date.getHours();\r\n    var m = date.getMinutes();\r\n    var s = date.getSeconds();\r\n    // Thêm số 0 đằng trước nếu nhỏ hơn 10 (vd: 09:05:02)\r\n    return (h < 10 ? '0'+h : h) + ':' + (m < 10 ? '0'+m : m) + ':' + (s < 10 ? '0'+s : s);\r\n}\r\n\r\n// 5. Bắt đầu tạo khung bảng HTML\r\nvar emailBody = \"<h3>Báo cáo dữ liệu từ thiết bị \" + metadata.deviceName + \"</h3>\";\r\nemailBody += \"<table border='1' style='border-collapse: collapse; width: 100%; text-align: center;'>\";\r\nemailBody += \"<tr style='background-color: #f2f2f2;'><th>STT</th><th>Thời gian</th><th>Nhiệt độ (C)</th><th>Độ ẩm (%)</th><th>Ánh sáng (lux)</th></tr>\";\r\n\r\n// Tìm độ dài lớn nhất của các mảng dữ liệu để lặp (thường chúng sẽ bằng nhau do gửi cùng lúc)\r\nvar maxLength = Math.max(tempData.length, humData.length, lightData.length);\r\n\r\n// 6. Điền từng hàng dữ liệu vào bảng\r\nfor (var i = 0; i < maxLength; i++) {\r\n    var stt = i + 1;\r\n    var timeStr = \"\";\r\n    var tempVal = \"\";\r\n    var humVal = \"\";\r\n    var lightVal = \"\";\r\n\r\n    // Lấy giá trị từng thông số nếu có\r\n    if (i < tempData.length) {\r\n        timeStr = formatTime(tempData[i].ts);\r\n        tempVal = tempData[i].value;\r\n    }\r\n    if (i < humData.length) {\r\n        if (!timeStr) timeStr = formatTime(humData[i].ts);\r\n        humVal = humData[i].value;\r\n    }\r\n    if (i < lightData.length) {\r\n        if (!timeStr) timeStr = formatTime(lightData[i].ts);\r\n        lightVal = lightData[i].value;\r\n    }\r\n\r\n    emailBody += \"<tr>\";\r\n    emailBody += \"<td>\" + stt + \"</td>\";\r\n    emailBody += \"<td>\" + timeStr + \"</td>\";\r\n    emailBody += \"<td>\" + tempVal + \"</td>\";\r\n    emailBody += \"<td>\" + humVal + \"</td>\";\r\n    emailBody += \"<td>\" + lightVal + \"</td>\";\r\n    emailBody += \"</tr>\";\r\n}\r\n\r\n// 7. Tính và điền hàng Trung bình\r\nemailBody += \"<tr style='font-weight: bold;'>\";\r\nemailBody += \"<td colspan='2'>Trung bình</td>\";\r\nemailBody += \"<td>\" + getAverage(tempData) + \"</td>\";\r\nemailBody += \"<td>\" + getAverage(humData) + \"</td>\";\r\nemailBody += \"<td>\" + getAverage(lightData) + \"</td>\";\r\nemailBody += \"</tr>\";\r\n\r\n// 8. Tính và điền hàng Trung vị\r\nemailBody += \"<tr style='font-weight: bold;'>\";\r\nemailBody += \"<td colspan='2'>Trung vị</td>\";\r\nemailBody += \"<td>\" + getMedian(tempData) + \"</td>\";\r\nemailBody += \"<td>\" + getMedian(humData) + \"</td>\";\r\nemailBody += \"<td>\" + getMedian(lightData) + \"</td>\";\r\nemailBody += \"</tr>\";\r\n\r\nemailBody += \"</table>\";\r\n\r\nreturn {\r\n    msg: { emailBody: emailBody },\r\n    metadata: metadata,\r\n    msgType: \"SEND_EMAIL_REQUEST\"\r\n};",
+          "tbelScript": "var emailBody = \"<h3>Dữ liệu 1 phút qua từ thiết bị \" + metadata.deviceName + \"</h3><table border='1' style='border-collapse: collapse; width: 100%;'><tr><th>Thông số</th><th>Các giá trị ghi nhận</th></tr>\";\r\n\r\nfor (var key in msg) {\r\n    emailBody += \"<tr><td style='padding: 8px;'><b>\" + key + \"</b></td><td style='padding: 8px;'>\";\r\n    var values = msg[key];\r\n    var valStrings = [];\r\n\r\n    for (var i = 0; i < values.length; i++) {\r\n        valStrings.push(values[i].value);\r\n    }\r\n\r\n    emailBody += valStrings.join(\", \") + \"</td></tr>\";\r\n}\r\nemailBody += \"</table>\";\r\n\r\nreturn {\r\n    msg: { emailBody: emailBody },\r\n    metadata: metadata,\r\n    msgType: \"SEND_EMAIL_REQUEST\"\r\n};"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1778,
+          "layoutY": 669
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.mail.TbMsgToEmailNode",
+        "name": "To email",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "fromTemplate": "info@testmail.org",
+          "toTemplate": "vinh.le020705@hcmut.edu.vn",
+          "ccTemplate": null,
+          "bccTemplate": null,
+          "subjectTemplate": "Data from CoreIOT_Publisher",
+          "mailBodyType": "true",
+          "bodyTemplate": "$[emailBody]"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1782,
+          "layoutY": 768
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.mail.TbSendEmailNode",
+        "name": "Send email",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "useSystemSmtpSettings": false,
+          "smtpProtocol": "smtp",
+          "smtpHost": "smtp.gmail.com",
+          "smtpPort": 587,
+          "timeout": 10000,
+          "enableTls": true,
+          "tlsVersion": "TLSv1.2",
+          "enableProxy": false,
+          "proxyHost": null,
+          "proxyPort": null,
+          "proxyUser": null,
+          "proxyPassword": null,
+          "username": "vinh.le020705@hcmut.edu.vn",
+          "password": "kwpd xdxw lzvp dmzy"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1788,
+          "layoutY": 871
+        }
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 0,
+        "toIndex": 1,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 2,
+        "type": "Post attributes"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 3,
+        "type": "Post telemetry"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 4,
+        "type": "Other"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 5,
+        "type": "RPC Request to Device"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 6,
+        "type": "Post attributes"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 6,
+        "type": "RPC Request from Device"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 6,
+        "type": "RPC Request to Device"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 7,
+        "type": "Activity Event"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 8,
+        "type": "Inactivity Event"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 15,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 9,
+        "toIndex": 10,
+        "type": "True"
+      },
+      {
+        "fromIndex": 9,
+        "toIndex": 14,
+        "type": "True"
+      },
+      {
+        "fromIndex": 10,
+        "toIndex": 11,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 11,
+        "toIndex": 16,
+        "type": "True"
+      },
+      {
+        "fromIndex": 12,
+        "toIndex": 9,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 14,
+        "toIndex": 13,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 15,
+        "toIndex": 12,
+        "type": "True"
+      },
+      {
+        "fromIndex": 16,
+        "toIndex": 17,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 17,
+        "toIndex": 18,
+        "type": "Success"
+      }
+    ],
+    "ruleChainConnections": null
+  }
+}

@@ -1,0 +1,25 @@
+\subsubsection{Các kịch bản kiểm thử chính}
+Để đánh giá toàn diện hệ thống, nhóm tiến hành kiểm thử theo các nhóm chức năng cốt lõi gồm cấu hình mạng, hiển thị cục bộ, suy luận TinyML và kết nối cloud. Kết quả tổng hợp được trình bày trong Bảng~\ref{tab:test-result-summary}.
+
+\begin{table}[H]
+    \centering
+    \caption{Tổng hợp kết quả kiểm thử hệ thống}
+    \label{tab:test-result-summary}
+    \renewcommand{\arraystretch}{1.35}
+    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}X|>{\centering\arraybackslash}p{2.3cm}|}
+        \hline
+        \textbf{Hạng mục} & \textbf{Mô tả kiểm thử} & \textbf{Kết quả} \\ \hline
+        Khởi động AP & Thiết bị phát Access Point và cho phép truy cập trang cấu hình trong lần sử dụng đầu tiên hoặc khi cần cấu hình lại. & Đạt \\ \hline
+        Quét và lưu Wi-Fi & Giao diện web liệt kê các mạng khả dụng, cho phép nhập SSID ẩn, lưu mật khẩu và chuyển sang chế độ Station. & Đạt \\ \hline
+        Đọc cảm biến & Dữ liệu nhiệt độ và độ ẩm được cập nhật liên tục từ cảm biến và phản ánh lên các giao diện hiển thị. & Đạt \\ \hline
+        Hiển thị cục bộ & LCD, LED đơn và LED RGB thay đổi đúng theo trạng thái môi trường và ngưỡng cảnh báo. & Đạt \\ \hline
+        Suy luận TinyML & Kết quả phân loại thời tiết được tạo ra trên ESP32 và hiển thị đồng thời trên web và terminal. & Đạt \\ \hline
+        Gửi dữ liệu cloud & Telemetry được đẩy lên ThingsBoard và hiển thị lại trên Dashboard gần thời gian thực. & Đạt \\ \hline
+        Rule Chain gửi email & Hệ thống tạo báo cáo và gửi email định kỳ theo logic đã cấu hình trong Rule Chain. & Đạt \\ \hline
+    \end{tabularx}
+\end{table}
+
+\subsubsection{Nhận xét sau kiểm thử}
+Kết quả kiểm thử cho thấy các khối chức năng chính đều hoạt động đúng với mục tiêu thiết kế. Đặc biệt, việc hệ thống đồng thời duy trì được hiển thị cục bộ, giao diện web, suy luận TinyML và kết nối cloud chứng minh rằng kiến trúc đa tác vụ trên ESP32 đã được tổ chức hợp lý. Trong các tình huống mất kết nối mạng hoặc cần đổi cấu hình Wi-Fi, cơ chế Access Point vẫn cho phép người dùng đưa thiết bị trở về trạng thái cấu hình mà không cần can thiệp phần mềm phức tạp.
+
+Từ góc độ triển khai thực tế, hệ thống đã đạt được mức hoàn thiện tốt cho một bài toán IoT tích hợp. Các bài kiểm thử không chỉ xác nhận từng module hoạt động đúng, mà còn cho thấy toàn bộ chuỗi xử lý từ cảm biến đến người dùng cuối được khép kín và ổn định.
