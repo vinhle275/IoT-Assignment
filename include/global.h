@@ -16,6 +16,9 @@
 #define HUMIDITY_DRY        40.0
 #define HUMIDITY_VERY_DRY   25.0
 
+#define AP_SSID "ESP32-YOUR NETWORK HERE!!!"
+#define AP_PASS "12345678"
+
 typedef enum {
     LED_STATE_TEMP_HOT,  
     LED_STATE_TEMP_WARM,  
@@ -47,8 +50,29 @@ typedef struct {
     char label[20];
 } WeatherData_t;
 
+typedef struct {
+    char ssid[32];
+    char password[64];
+} WifiConfig_t;
+
+typedef struct {
+    char server[40];
+    char token[40];
+} CoreIotConfig_t;
+
+typedef struct {
+    char device_id[20];
+    char mqtt_pass[20];
+    char tiny_server[20];
+    int port;
+} MqttLocalConfig_t;
+
 extern QueueHandle_t sensorQueue;
 extern QueueHandle_t weatherQueue;
+extern QueueHandle_t wifiConfigQueue;
+extern QueueHandle_t coreIotQueue;
+extern QueueHandle_t localMqttQueue;
+
 //extern String current_weather_prediction;
 
 // extern String WIFI_SSID;
@@ -59,14 +83,15 @@ extern QueueHandle_t weatherQueue;
 
 
 
-extern String ssid;
-extern String password;
-extern String wifi_ssid;
-extern String wifi_password;
+// extern String ssid;
+// extern String password;
+// extern String wifi_ssid;
+// extern String wifi_password;
+// extern boolean isWifiConnected;
 
-extern boolean isWifiConnected;
 extern SemaphoreHandle_t xBinarySemaphoreInternet;
 
 //Task 6
 extern SemaphoreHandle_t xSemaphoreLedControl;
+extern SemaphoreHandle_t xSemaphoreNeoControl;
 #endif

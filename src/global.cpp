@@ -3,7 +3,10 @@
 // float glob_humidity = 0;
 QueueHandle_t sensorQueue = NULL;
 QueueHandle_t weatherQueue = NULL;
-String current_weather_prediction = "Đang cập nhật...";
+QueueHandle_t wifiConfigQueue = NULL;
+QueueHandle_t coreIotQueue = NULL;
+QueueHandle_t localMqttQueue = NULL;
+// String current_weather_prediction = "Đang cập nhật...";
 
 // String WIFI_SSID;
 // String WIFI_PASS;
@@ -11,12 +14,17 @@ String current_weather_prediction = "Đang cập nhật...";
 // String CORE_IOT_SERVER;
 // String CORE_IOT_PORT;
 
-String ssid = "ESP32-YOUR NETWORK HERE!!!";
-String password = "12345678";
-String wifi_ssid = "P730";
-String wifi_password = "wifihuroi";
-boolean isWifiConnected = false;
+// String ssid = "ESP32-YOUR NETWORK HERE!!!";
+// String password = "12345678";
+// String wifi_ssid = "P730";
+// String wifi_password = "wifihuroi";
+// boolean isWifiConnected = false;
+
+
+
+
 SemaphoreHandle_t xBinarySemaphoreInternet = xSemaphoreCreateBinary();
 
 //Task 6
 SemaphoreHandle_t xSemaphoreLedControl = xSemaphoreCreateBinary();
+SemaphoreHandle_t xSemaphoreNeoControl = xSemaphoreCreateBinary();

@@ -1,393 +1,440 @@
 #include "mainserver.h"
+#include "global.h" // Include thêm file này để lấy định nghĩa các struct như MqttLocalConfig_t
 #include <WiFi.h>
 #include <WebServer.h>
+#include <Arduino.h>
 
-// LED states removed as per request
+// Khai báo extern các queue và semaphore từ main.cpp
+extern QueueHandle_t sensorQueue;
+extern QueueHandle_t weatherQueue;
+extern QueueHandle_t wifiConfigQueue;
+extern QueueHandle_t localMqttQueue; // Thêm localMqttQueue để đọc/ghi cấu hình
+extern SemaphoreHandle_t xBinarySemaphoreInternet;
+
+// Biến trạng thái
+bool led1_state = false;
+bool led2_state = false;
 bool isAPMode = true;
-
 WebServer server(80);
-
 unsigned long connect_start_ms = 0;
 bool connecting = false;
 
-String mainPage()
-{
+// --- Giao diện Dashboard Modern (Giữ nguyên) ---
+String mainPage() {
   float temperature = 0.0;
   float humidity = 0.0;
-  String weatherLabel = "Calculating..."; // Biến cục bộ để hiển thị tạm thời
-  
-  SensorData_t receivedData;
-  WeatherData_t receivedWeather;
-
-  // Lấy dữ liệu nhiệt ẩm
-  if (sensorQueue != NULL && xQueuePeek(sensorQueue, &receivedData, 0) == pdPASS) {
-      temperature = receivedData.temperature;
-      humidity = receivedData.humidity;
+  String weatherLabel = "Updating..."; 
+  SensorData_t rData;
+  WeatherData_t rWeather;
+  if (sensorQueue != NULL && xQueuePeek(sensorQueue, &rData, 0) == pdPASS) {
+      temperature = rData.temperature;
+      humidity = rData.humidity;
   }
-  
-  // Lấy dữ liệu dự đoán thời tiết từ Queue
-  if (weatherQueue != NULL && xQueuePeek(weatherQueue, &receivedWeather, 0) == pdPASS) {
-      weatherLabel = String(receivedWeather.label);
+  if (weatherQueue != NULL && xQueuePeek(weatherQueue, &rWeather, 0) == pdPASS) {
+      weatherLabel = String(rWeather.label);
   }
-
+  String l1 = led1_state ? "ON" : "OFF";
+  String l2 = led2_state ? "ON" : "OFF";
   return R"rawliteral(<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ESP32 Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>AsynapRous Hub</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #0f172a; --surface: #1e293b; --primary: #38bdf8;
-      --text: #f8fafc; --text-muted: #94a3b8; --card-radius: 20px;
+    :root { 
+      --bg: #f8fafc; --surface: #ffffff; --primary: #3b82f6; --secondary: #10b981;
+      --text: #0f172a; --muted: #64748b; --border: #e2e8f0; --shadow: rgba(0,0,0,0.05);
     }
-    * { box-sizing: border-box; font-family: 'Outfit', sans-serif; }
-    body { margin: 0; background-color: var(--bg); color: var(--text); padding: 20px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
-    .header { width: 100%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-    .header h1 { margin: 0; font-size: 28px; font-weight: 700; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .nav-btn { background: var(--surface); color: var(--text); border: 1px solid #334155; padding: 10px 20px; border-radius: 12px; cursor: pointer; text-decoration: none; font-weight: 600; transition: all 0.3s; }
-    .nav-btn:hover { background: #334155; transform: translateY(-2px); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; width: 100%; max-width: 1000px; margin-bottom: 20px; }
-    .card { background: var(--surface); border-radius: var(--card-radius); padding: 24px; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5); border: 1px solid #334155; transition: transform 0.3s; position: relative; overflow: hidden;}
-    .card:hover { transform: translateY(-5px); }
-    .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #38bdf8, #818cf8); opacity: 0; transition: opacity 0.3s;}
-    .card:hover::before { opacity: 1; }
-    .value { font-size: 48px; font-weight: 700; margin: 10px 0; }
-    .label { color: var(--text-muted); font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-    .btn-group { display: flex; gap: 15px; margin-top: 15px; }
-    .btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; background: #334155; color: white;}
-    .btn.on { background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);}
-    .btn:hover { filter: brightness(1.1); transform: scale(1.02); }
-    .chart-container { background: var(--surface); padding: 20px; border-radius: var(--card-radius); width: 100%; max-width: 1000px; border: 1px solid #334155; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5); margin-bottom: 20px;}
-    canvas { width: 100% !important; max-height: 400px; }
+    [data-theme="dark"] {
+      --bg: #0f172a; --surface: #1e293b; --primary: #60a5fa; --secondary: #34d399;
+      --text: #f8fafc; --muted: #94a3b8; --border: #334155; --shadow: rgba(0,0,0,0.3);
+    }
+    * { box-sizing: border-box; font-family: 'Outfit', sans-serif; transition: 0.3s; }
+    body { margin: 0; background: var(--bg); color: var(--text); padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .header { width: 100%; max-width: 900px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    .header h2 { font-weight: 700; margin: 0; }
+    .header-actions { display: flex; gap: 10px; }
+    .theme-btn { 
+      background: var(--surface); border: 1px solid var(--border); width: 42px; height: 42px; 
+      border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .nav-btn { 
+      background: var(--surface); color: var(--text); border: 1px solid var(--border); 
+      padding: 10px 18px; border-radius: 12px; text-decoration: none; font-size: 13px; font-weight: 600;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; width: 100%; max-width: 900px; margin-bottom: 25px; }
+    .card { background: var(--surface); border-radius: 24px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 4px 6px var(--shadow); }
+    .value { font-size: 40px; font-weight: 700; margin: 10px 0; }
+    .label { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .btn { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 14px; font-weight: 700; cursor: pointer; margin-top: 10px; background: var(--bg); color: var(--text); }
+    .btn.on { background: var(--secondary); color: #fff; border-color: var(--secondary); }
+    .chart-box { background: var(--surface); padding: 25px; border-radius: 24px; width: 100%; max-width: 900px; border: 1px solid var(--border); margin-bottom: 25px; box-shadow: 0 4px 6px var(--shadow); }
+    canvas { width: 100%; height: 240px; display: block; }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>🚀 ESP32 IoT Hub</h1>
-    <a href="/settings" class="nav-btn">⚙️ Cài đặt & Wi-Fi</a>
+    <h2>ASYNAPROUS HUB</h2>
+    <div class="header-actions">
+      <button class="theme-btn" onclick="toggleTheme()" id="themeIcon">🌙</button>
+      <a href="/settings" class="nav-btn">WI-FI & MQTT</a>
+    </div>
   </div>
-  
   <div class="grid">
+    <div class="card"><div class="label">Nhiệt độ</div><div class="value"><span id="t">)rawliteral" + String(temperature) + R"rawliteral(</span>°C</div></div>
+    <div class="card"><div class="label">Độ ẩm</div><div class="value"><span id="h">)rawliteral" + String(humidity) + R"rawliteral(</span>%</div></div>
+    <div class="card"><div class="label">Dự báo AI</div><div class="value" style="font-size: 20px;"><span id="p">)rawliteral" + weatherLabel + R"rawliteral(</span></div></div>
     <div class="card">
-      <div class="label">Nhiệt độ</div>
-      <div class="value"><span id="temp">)rawliteral" + String(temperature) + R"rawliteral(</span><span style="font-size:24px;color:var(--text-muted)">°C</span></div>
-    </div>
-    <div class="card">
-      <div class="label">Độ ẩm</div>
-      <div class="value"><span id="hum">)rawliteral" + String(humidity) + R"rawliteral(</span><span style="font-size:24px;color:var(--text-muted)">%</span></div>
-    </div>
-    <div class="card">
-      <div class="label">AI Dự đoán Thời tiết</div>
-      <div class="value" style="font-size: 36px;"><span id="prediction">)rawliteral" + weatherLabel + R"rawliteral(</span></div>
+      <div class="label">Thiết bị</div>
+      <button id="b1" class="btn )rawliteral" + String(led1_state ? "on" : "") + R"rawliteral(" onclick="tk(1)">LED: <span id="l1">)rawliteral" + l1 + R"rawliteral(</span></button>
+      <button id="b2" class="btn )rawliteral" + String(led2_state ? "on" : "") + R"rawliteral(" onclick="tk(2)">RGB: <span id="l2">)rawliteral" + l2 + R"rawliteral(</span></button>
     </div>
   </div>
-
-  <div class="chart-container">
-    <div class="label" style="margin-bottom: 15px;">Biểu đồ thời gian thực</div>
-    <canvas id="myChart"></canvas>
-  </div>
+  <div class="chart-box"><div class="label" style="margin-bottom:15px">Temperature History (60s)</div><canvas id="ct"></canvas></div>
+  <div class="chart-box"><div class="label" style="margin-bottom:15px">Humidity History (60s)</div><canvas id="ch"></canvas></div>
 
   <script>
-    const ctx = document.getElementById('myChart').getContext('2d');
-    const myChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [
-          { label: 'Nhiệt độ (°C)', borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', data: [], tension: 0.4, fill: true },
-          { label: 'Độ ẩm (%)', borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', data: [], tension: 0.4, fill: true }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { labels: { color: '#f8fafc', font: { family: 'Outfit' } } }
-        },
-        scales: {
-          x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-          y: { min: 0, max: 100, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
-        }
-      }
-    });
+    let dataT = [], dataH = [], labels = [];
+    const MAX_POINTS = 20;
 
-    setInterval(() => {
-      fetch('/sensors')
-        .then(res => res.json())
-        .then(d => {
-          const t = parseFloat(d.temp);
-          const h = parseFloat(d.hum);
-          document.getElementById('temp').innerText = t.toFixed(1);
-          document.getElementById('hum').innerText = h.toFixed(1);
-          if (d.prediction) {
-            document.getElementById('prediction').innerText = d.prediction;
-          }
-          
-          const now = new Date();
-          const timeStr = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
-          
-          myChart.data.labels.push(timeStr);
-          myChart.data.datasets[0].data.push(t);
-          myChart.data.datasets[1].data.push(h);
-          
-          if(myChart.data.labels.length > 20) {
-            myChart.data.labels.shift();
-            myChart.data.datasets[0].data.shift();
-            myChart.data.datasets[1].data.shift();
-          }
-          myChart.update();
-        });
-    }, 3000);
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const target = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', target);
+      document.getElementById('themeIcon').innerText = target === 'dark' ? '☀️' : '🌙';
+      localStorage.setItem('theme', target);
+      refreshCharts();
+    }
+
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('themeIcon').innerText = savedTheme === 'dark' ? '☀️' : '🌙';
+
+    function tk(id) {
+      fetch('/toggle?led=' + id + '&_t=' + Date.now()).then(r => r.json()).then(j => {
+        document.getElementById('l1').innerText = j.led1; document.getElementById('l2').innerText = j.led2;
+        document.getElementById('b1').className = 'btn ' + (j.led1 === "ON" ? "on" : "");
+        document.getElementById('b2').className = 'btn ' + (j.led2 === "ON" ? "on" : "");
+      });
+    }
+
+    function drawChart(canId, data, timeLabels, color, minV, maxV, unit) {
+      const can = document.getElementById(canId);
+      const ctx = can.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      can.width = can.offsetWidth * dpr; can.height = can.offsetHeight * dpr;
+      ctx.scale(dpr, dpr);
+      const w = can.offsetWidth, h = can.offsetHeight;
+      const padL = 50, padB = 40, padT = 20, padR = 20;
+      const gH = h - padB - padT, gW = w - padL - padR;
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
+      ctx.fillStyle = "#94a3b8"; ctx.font = "600 11px Outfit";
+
+      for(let i=0; i<=4; i++) {
+        let val = minV + (maxV - minV) * (i/4);
+        let y = (h - padB) - (i/4) * gH;
+        ctx.fillText(val.toFixed(0) + unit, 10, y + 4);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+      }
+
+      if (data.length < 2) return;
+      ctx.textAlign = "center";
+      data.forEach((v, i) => {
+        if (i % 5 === 0 || i === data.length - 1) {
+          const x = padL + (i / (MAX_POINTS - 1)) * gW;
+          ctx.fillText(timeLabels[i] || "", x, h - 10);
+        }
+      });
+
+      const grad = ctx.createLinearGradient(0, padT, 0, h - padB);
+      grad.addColorStop(0, color + "33"); grad.addColorStop(1, color + "00");
+      ctx.fillStyle = grad; ctx.beginPath();
+      data.forEach((v, i) => {
+        const x = padL + (i / (MAX_POINTS - 1)) * gW;
+        const y = (h - padB) - ((v - minV) / (maxV - minV)) * gH;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.lineTo(padL + ((data.length-1) / (MAX_POINTS - 1)) * gW, h - padB);
+      ctx.lineTo(padL, h - padB); ctx.fill();
+
+      ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.lineJoin = "round";
+      if(isDark) { ctx.shadowBlur = 8; ctx.shadowColor = color; }
+      data.forEach((v, i) => {
+        const x = padL + (i / (MAX_POINTS - 1)) * gW;
+        const y = (h - padB) - ((v - minV) / (maxV - minV)) * gH;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke(); ctx.shadowBlur = 0;
+    }
+
+    function refreshCharts() {
+      drawChart('ct', dataT, labels, '#3b82f6', 0, 50, '°'); 
+      drawChart('ch', dataH, labels, '#10b981', 0, 100, '%');
+    }
+
+    function update() {
+      fetch('/sensors?_t=' + Date.now()).then(r => r.json()).then(d => {
+        document.getElementById('t').innerText = d.temp.toFixed(1);
+        document.getElementById('h').innerText = d.hum.toFixed(1);
+        if(d.prediction) document.getElementById('p').innerText = d.prediction;
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0') + ":" + now.getSeconds().toString().padStart(2,'0');
+        dataT.push(d.temp); dataH.push(d.hum); labels.push(timeStr);
+        if (dataT.length > MAX_POINTS) { dataT.shift(); dataH.shift(); labels.shift(); }
+        refreshCharts();
+      });
+    }
+
+    setInterval(update, 3000);
+    window.addEventListener('resize', refreshCharts);
   </script>
 </body>
 </html>)rawliteral";
 }
 
-String settingsPage()
-{
-  return R"rawliteral(<!DOCTYPE html>
-<html lang="vi">
-<head>
+// --- Giao diện Wi-Fi & MQTT Settings (Đã cập nhật để truyền Data Mặc Định) ---
+String settingsPage(String devId, String mqttPass, String tinySrv, int port) {
+  return R"rawliteral(<!DOCTYPE html> <html lang="vi"> <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cài đặt Wi-Fi</title>
+  <title>Wi-Fi & MQTT Config</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root { --bg: #0f172a; --surface: #1e293b; --text: #f8fafc; --primary: #38bdf8; }
-    * { box-sizing: border-box; font-family: 'Outfit', sans-serif; }
-    body { margin: 0; background-color: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;}
-    .container { background: var(--surface); padding: 40px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); width: 100%; max-width: 450px; border: 1px solid #334155; }
-    h1 { margin-top: 0; margin-bottom: 25px; font-size: 26px; text-align: center; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700;}
-    .form-group { margin-bottom: 20px; }
-    label { display: block; margin-bottom: 8px; color: #94a3b8; font-weight: 600; }
-    .scan-flex { display: flex; gap: 10px; }
-    select, input[type="text"], input[type="password"] { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #334155; background: var(--bg); color: var(--text); font-size: 16px; outline: none; transition: border-color 0.3s;}
-    select:focus, input:focus { border-color: var(--primary); }
-    button { padding: 14px 20px; border: none; border-radius: 10px; font-weight: 600; font-size: 16px; cursor: pointer; transition: 0.3s; }
-    .btn-scan { background: #334155; color: white; white-space: nowrap; }
-    .btn-scan:hover { background: #475569; }
-    .btn-submit { background: linear-gradient(135deg, #38bdf8, #818cf8); color: white; width: 100%; margin-top: 10px; box-shadow: 0 4px 15px rgba(56,189,248,0.3);}
-    .btn-submit:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(56,189,248,0.4); }
-    .btn-back { background: transparent; color: #94a3b8; width: 100%; margin-top: 15px; border: 1px solid #334155; }
-    .btn-back:hover { background: #334155; color: white;}
-    #msg { margin-top: 15px; text-align: center; font-weight: 600; color: #10b981;}
-    .loader { display: none; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; margin: 0 auto; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    body { background: #f8fafc; color: #0f172a; font-family: 'Outfit'; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box;}
+    .card { background: #fff; padding: 35px; border-radius: 24px; width: 100%; max-width: 400px; box-shadow: 0 10px 15px rgba(0,0,0,0.05); margin-bottom: 25px;}
+    h2 { text-align: center; margin-bottom: 25px; font-size: 22px; }
+    select, input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 15px; outline: none; box-sizing: border-box; font-family: 'Outfit'; }
+    label { font-weight: 600; font-size: 14px; margin-bottom: 6px; display: block; color: #475569; }
+    .btn-scan { background: #f1f5f9; color: #3b82f6; border: 1px solid #e2e8f0; padding: 10px; border-radius: 12px; cursor: pointer; width: 100%; margin-bottom: 15px; font-weight: 600; }
+    .btn-submit { width: 100%; padding: 15px; border: none; border-radius: 14px; background: #3b82f6; color: #fff; font-weight: 700; cursor: pointer; transition: 0.3s; }
+    .btn-submit:hover { background: #2563eb; }
+    .btn-mqtt { background: #10b981; }
+    .btn-mqtt:hover { background: #059669; }
+    .back-btn { display:block; text-align:center; color:#64748b; text-decoration:none; font-weight: 600; margin-bottom: 20px;}
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>⚙️ Cấu hình Wi-Fi ESP32</h1>
-    <form id="wifiForm">
-      <div class="form-group">
-        <label>Chọn mạng Wi-Fi</label>
-        <div class="scan-flex">
-          <select id="ssid" onchange="document.getElementById('manualSsid').value = this.value;">
-            <option value="">-- Chọn mạng --</option>
-          </select>
-          <button type="button" class="btn-scan" onclick="scanWifi()" id="btnScan">🔍 Dò mạng</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Hoặc nhập SSID (mạng ẩn)</label>
-        <input type="text" id="manualSsid" placeholder="Tên Wi-Fi">
-      </div>
-      <div class="form-group">
-        <label>Mật khẩu</label>
-        <input type="password" id="pass" placeholder="Bỏ trống nếu không có mật khẩu">
-      </div>
-      <button type="submit" class="btn-submit">🚀 Lưu và Kết nối</button>
-      <button type="button" class="btn-back" onclick="window.location='/'">🏠 Về trang chủ</button>
+  <div class="card">
+    <h2>🌐 Wi-Fi Setup</h2>
+    <button class="btn-scan" onclick="scan()" id="sb">🔍 SCAN NETWORKS</button>
+    <select id="sl" onchange="document.getElementById('ss').value=this.value"><option value="">-- Select network --</option></select>
+    <form id="wf">
+      <input type="text" id="ss" placeholder="SSID" required>
+      <input type="password" id="ps" placeholder="Password">
+      <button type="submit" class="btn-submit">CONNECT WI-FI</button>
     </form>
-    <div id="msg"><div class="loader" id="loader"></div><div id="msgTxt" style="margin-top:10px;"></div></div>
+    <div id="st" style="margin-top:15px; text-align:center; font-weight:600;"></div>
   </div>
+
+  <div class="card">
+    <h2>⚙️ Local MQTT Config</h2>
+    <form id="mqttForm">
+      <label>Device ID</label>
+      <input type="text" id="dev_id" value=")rawliteral" + devId + R"rawliteral(" required>
+
+      <label>MQTT Password</label>
+      <input type="text" id="mqtt_pass" value=")rawliteral" + mqttPass + R"rawliteral(">
+
+      <label>Tiny Server IP</label>
+      <input type="text" id="tiny_srv" value=")rawliteral" + tinySrv + R"rawliteral(" required>
+
+      <label>Port</label>
+      <input type="number" id="port" value=")rawliteral" + String(port) + R"rawliteral(" required>
+
+      <button type="submit" class="btn-submit btn-mqtt">SAVE MQTT CONFIG</button>
+    </form>
+    <div id="mqtt_st" style="margin-top:15px; text-align:center; color:#10b981; font-weight:600;"></div>
+  </div>
+
+  <a href="/" class="back-btn">⬅ Back to Dashboard</a>
+
   <script>
-    function scanWifi() {
-      const btn = document.getElementById('btnScan');
-      const select = document.getElementById('ssid');
-      btn.innerText = 'Đang dò...'; btn.disabled = true;
-      select.innerHTML = '<option value="">Đang tìm mạng xung quanh...</option>';
-      fetch('/scan')
-        .then(r => r.json())
-        .then(data => {
-          btn.innerText = '🔍 Làm mới'; btn.disabled = false;
-          select.innerHTML = '<option value="">-- Chọn mạng --</option>';
-          data.forEach(n => {
-            select.innerHTML += `<option value="${n.ssid}">${n.ssid} (${n.rssi} dBm)</option>`;
-          });
-        })
-        .catch(e => {
-          btn.innerText = '🔍 Thử lại'; btn.disabled = false;
-          select.innerHTML = '<option value="">Lỗi khi dò mạng!</option>';
-        });
+    function scan() {
+      const b=document.getElementById('sb'); b.innerText="SCANNING...";
+      fetch('/scan').then(r=>r.json()).then(data=>{
+        const s=document.getElementById('sl'); s.innerHTML='<option value="">-- Select network --</option>';
+        data.forEach(n=>{ const o=document.createElement('option'); o.value=n.ssid; o.innerHTML=n.ssid+' ('+n.rssi+' dBm)'; s.appendChild(o); });
+        b.innerText="🔍 SCAN AGAIN";
+      });
     }
 
-    document.getElementById('wifiForm').onsubmit = function(e){
+    document.getElementById('wf').onsubmit=e=>{
       e.preventDefault();
-      let ssid = document.getElementById('manualSsid').value.trim();
-      if(!ssid) { alert("Vui lòng chọn hoặc nhập tên Wi-Fi!"); return; }
-      
-      let pass = document.getElementById('pass').value;
-      document.getElementById('loader').style.display = 'block';
-      document.getElementById('msgTxt').innerText = 'Đang lưu cấu hình và kết nối...';
-      
-      fetch('/connect?ssid='+encodeURIComponent(ssid)+'&pass='+encodeURIComponent(pass))
-        .then(r=>r.text())
-        .then(msg=>{
-          document.getElementById('loader').style.display = 'none';
-          document.getElementById('msgTxt').innerText = msg;
-        });
+      fetch(`/connect?ssid=${encodeURIComponent(document.getElementById('ss').value)}&pass=${encodeURIComponent(document.getElementById('ps').value)}`)
+      .then(r=>r.text()).then(m=>{ document.getElementById('st').innerText="Connecting..."; setTimeout(()=>window.location.href="/", 2000); });
+    };
+
+    document.getElementById('mqttForm').onsubmit=e=>{
+      e.preventDefault();
+      let d = encodeURIComponent(document.getElementById('dev_id').value);
+      let p = encodeURIComponent(document.getElementById('mqtt_pass').value);
+      let s = encodeURIComponent(document.getElementById('tiny_srv').value);
+      let pt = encodeURIComponent(document.getElementById('port').value);
+
+      document.getElementById('mqtt_st').innerText="Đang lưu...";
+      fetch(`/update_mqtt?dev_id=${d}&pass=${p}&server=${s}&port=${pt}`)
+      .then(r=>r.text()).then(m=>{
+         document.getElementById('mqtt_st').innerText="✅ Đã cập nhật thành công!";
+         setTimeout(()=>document.getElementById('mqtt_st').innerText="", 3000);
+      });
     };
   </script>
 </body>
 </html>)rawliteral";
 }
 
-// ========== Handlers ==========
-void handleRoot() { server.send(200, "text/html", mainPage()); }
-
-void handleSensors()
-{
-  float t = 0.0;
-  float h = 0.0;
-  String weatherLabel = "Calculating..."; // Biến cục bộ
-
-  SensorData_t receivedData;
-  WeatherData_t receivedWeather;
-
-  // Lấy dữ liệu nhiệt ẩm
-  if (sensorQueue != NULL && xQueuePeek(sensorQueue, &receivedData, 0) == pdPASS) {
-      t = receivedData.temperature;
-      h = receivedData.humidity;
-  }
-  
-  // Lấy dữ liệu dự đoán thời tiết
-  if (weatherQueue != NULL && xQueuePeek(weatherQueue, &receivedWeather, 0) == pdPASS) {
-      weatherLabel = String(receivedWeather.label);
-  }
-
-  // Cập nhật chuỗi JSON
-  String json = "{\"temp\":" + String(t) + ",\"hum\":" + String(h) + ",\"prediction\":\"" + weatherLabel + "\"}";
-  server.send(200, "application/json", json);
+// --- Handlers ---
+void handleRoot() { 
+  server.send(200, "text/html", mainPage()); 
 }
 
-void handleWifiScan()
-{
+void handleToggle() {
+  server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  int led = server.arg("led").toInt();
+
+  if (led == 1) {
+    led1_state = !led1_state;
+    // Điều khiển LED đơn (giữ nguyên logic cũ nếu cần)
+    if (led1_state) {
+      if (uxSemaphoreGetCount(xSemaphoreLedControl) == 0) xSemaphoreGive(xSemaphoreLedControl);
+    } else {
+      xSemaphoreTake(xSemaphoreLedControl, 0);
+    }
+  } 
+  else if (led == 2) { // Đây là phần điều khiển NeoLED
+    led2_state = !led2_state;
+    if (led2_state) {
+      // Nếu bật: Give semaphore để cho phép NeoLED sáng
+      if (uxSemaphoreGetCount(xSemaphoreNeoControl) == 0) {
+        xSemaphoreGive(xSemaphoreNeoControl);
+      }
+    } else {
+      // Nếu tắt: Take semaphore để dừng NeoLED
+      xSemaphoreTake(xSemaphoreNeoControl, 0);
+    }
+  }
+
+  server.send(200, "application/json", "{\"led1\":\"" + String(led1_state ? "ON" : "OFF") + "\",\"led2\":\"" + String(led2_state ? "ON" : "OFF") + "\"}");
+}
+
+void handleSensors() {
+  server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  float t = 0.0, h = 0.0; SensorData_t sd; WeatherData_t wd;
+  if (sensorQueue && xQueuePeek(sensorQueue, &sd, 0) == pdPASS) { t = sd.temperature; h = sd.humidity; }
+  String p = (weatherQueue && xQueuePeek(weatherQueue, &wd, 0) == pdPASS) ? String(wd.label) : "Updating...";
+  server.send(200, "application/json", "{\"temp\":" + String(t) + ",\"hum\":" + String(h) + ",\"prediction\":\"" + p + "\"}");
+}
+
+void handleWifiScan() {
   int n = WiFi.scanNetworks();
   String json = "[";
-  for (int i = 0; i < n; ++i) {
-    if(i) json += ",";
+  for (int i = 0; i < n; i++) {
+    if (i) json += ",";
     json += "{\"ssid\":\"" + WiFi.SSID(i) + "\",\"rssi\":" + String(WiFi.RSSI(i)) + "}";
   }
   json += "]";
   server.send(200, "application/json", json);
 }
 
-void handleSettings() { server.send(200, "text/html", settingsPage()); }
-
-void handleConnect()
-{
-  wifi_ssid = server.arg("ssid");
-  wifi_password = server.arg("pass");
-  server.send(200, "text/plain", "Connecting....");
-  isAPMode = false;
-  connecting = true;
-  connect_start_ms = millis();
-  connectToWiFi();
-}
-
-// ========== WiFi ==========
-void setupServer()
-{
-  server.on("/", HTTP_GET, handleRoot);
-  server.on("/sensors", HTTP_GET, handleSensors);
-  server.on("/settings", HTTP_GET, handleSettings);
-  server.on("/scan", HTTP_GET, handleWifiScan);
-  server.on("/connect", HTTP_GET, handleConnect);
-  server.begin();
-}
-
-void startAP()
-{
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(ssid.c_str(), password.c_str());
-  Serial.print("AP IP address: ");
-  Serial.println(WiFi.softAPIP());
-  isAPMode = true;
-  connecting = false;
-}
-
-void connectToWiFi()
-{
-  WiFi.mode(WIFI_STA);
-  if (wifi_password.isEmpty())
-  {
-    WiFi.begin(wifi_ssid.c_str());
+void handleSettings() {
+  MqttLocalConfig_t currentLoc;
+  
+  // Lấy giá trị hiện hành từ MQTT Queue để điền sẵn vào HTML Web
+  if (localMqttQueue != NULL && xQueuePeek(localMqttQueue, &currentLoc, 0) == pdPASS) {
+      // Đã lấy thành công cấu hình
+  } else {
+      // Trường hợp queue trống, cấp giá trị hiển thị mặc định
+      strcpy(currentLoc.device_id, "ESP32_001");
+      strcpy(currentLoc.mqtt_pass, "1234567890");
+      strcpy(currentLoc.tiny_server, "192.168.1.3");
+      currentLoc.port = 1883;
   }
-  else
-  {
-    WiFi.begin(wifi_ssid.c_str(), wifi_password.c_str());
-  }
-  Serial.print("Connecting to: ");
-  Serial.print(wifi_ssid.c_str());
-
-  Serial.print(" Password: ");
-  Serial.print(wifi_password.c_str());
+  
+  server.send(200, "text/html", settingsPage(String(currentLoc.device_id), String(currentLoc.mqtt_pass), String(currentLoc.tiny_server), currentLoc.port));
 }
 
-// ========== Main task ==========
-void main_server_task(void *pvParameters)
-{
+// Xử lý Route Mới Cập nhật cấu hình Local MQTT do người dùng bấm gửi
+void handleUpdateMqtt() {
+  MqttLocalConfig_t newLoc;
+
+  String dev_id = server.arg("dev_id");
+  String pass = server.arg("pass");
+  String srv = server.arg("server");
+  int port = server.arg("port").toInt();
+
+  // Đổ string vừa đọc được từ form vào biến cấu hình với giới hạn buffer an toàn
+  strncpy(newLoc.device_id, dev_id.c_str(), sizeof(newLoc.device_id) - 1);
+  newLoc.device_id[sizeof(newLoc.device_id) - 1] = '\0';
+
+  strncpy(newLoc.mqtt_pass, pass.c_str(), sizeof(newLoc.mqtt_pass) - 1);
+  newLoc.mqtt_pass[sizeof(newLoc.mqtt_pass) - 1] = '\0';
+
+  strncpy(newLoc.tiny_server, srv.c_str(), sizeof(newLoc.tiny_server) - 1);
+  newLoc.tiny_server[sizeof(newLoc.tiny_server) - 1] = '\0';
+
+  newLoc.port = port;
+
+  // Ghi đè vào Queue. Từ đây Task CoreIOT sẽ tự động ngắt kết nối cũ và apply cấu hình mới ngay lập tức
+  if (localMqttQueue != NULL) {
+      xQueueOverwrite(localMqttQueue, &newLoc);
+  }
+
+  server.send(200, "text/plain", "OK");
+}
+
+void handleConnect() {
+  WifiConfig_t conf; memset(&conf, 0, sizeof(conf));
+  strncpy(conf.ssid, server.arg("ssid").c_str(), 31);
+  strncpy(conf.password, server.arg("pass").c_str(), 63);
+  if (wifiConfigQueue) xQueueOverwrite(wifiConfigQueue, &conf);
+  server.send(200, "text/plain", "OK");
+  connecting = true; connect_start_ms = millis();
+  WiFi.mode(WIFI_STA); WiFi.begin(conf.ssid, conf.password);
+}
+
+// --- WiFi & Task Management ---
+void startAP() {
+  WiFi.mode(WIFI_AP); WiFi.softAP(AP_SSID, AP_PASS);
+  isAPMode = true; connecting = false;
+}
+
+void main_server_task(void *pvParameters) {
   pinMode(BOOT_PIN, INPUT_PULLUP);
+  startAP(); 
 
-  startAP();
-  setupServer();
+  server.on("/", handleRoot);
+  server.on("/toggle", handleToggle);
+  server.on("/sensors", handleSensors);
+  server.on("/settings", handleSettings);
+  server.on("/scan", handleWifiScan);
+  server.on("/connect", handleConnect);
+  
+  // Khai báo đường dẫn mới để lắng nghe API cập nhật MQTT
+  server.on("/update_mqtt", handleUpdateMqtt);
 
-  while (1)
-  {
+  server.begin(); 
+
+  while (1) {
     server.handleClient();
-
-    // BOOT Button to switch to AP Mode
-    if (digitalRead(BOOT_PIN) == LOW)
-    {
-      vTaskDelay(100);
-      if (digitalRead(BOOT_PIN) == LOW)
-      {
-        if (!isAPMode)
-        {
-          startAP();
-          setupServer();
-        }
+    if (digitalRead(BOOT_PIN) == LOW) {
+      vTaskDelay(pdMS_TO_TICKS(100));
+      if (digitalRead(BOOT_PIN) == LOW && !isAPMode) startAP();
+    }
+    if (connecting) {
+      if (WiFi.status() == WL_CONNECTED) {
+        if(xBinarySemaphoreInternet) xSemaphoreGive(xBinarySemaphoreInternet);
+        isAPMode = false; connecting = false;
+      } else if (millis() - connect_start_ms > 15000) {
+        startAP(); connecting = false;
       }
     }
-
-    // STA Mode
-    if (connecting)
-    {
-      if (WiFi.status() == WL_CONNECTED)
-      {
-        Serial.print("STA IP address: ");
-        Serial.println(WiFi.localIP());
-        isWifiConnected = true; // Internet access
-
-        xSemaphoreGive(xBinarySemaphoreInternet);
-
-        isAPMode = false;
-        connecting = false;
-      }
-      else if (millis() - connect_start_ms > 10000)
-      { // timeout 10s
-        Serial.println("WiFi connect failed! Back to AP.");
-        startAP();
-        setupServer();
-        connecting = false;
-        isWifiConnected = false;
-      }
-    }
-
-    vTaskDelay(20); // avoid watchdog reset
+    vTaskDelay(pdMS_TO_TICKS(20));
   }
 }

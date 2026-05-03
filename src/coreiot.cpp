@@ -1,95 +1,88 @@
 #include "coreiot.h"
 
-// ----------- CONFIGURE THESE! -----------
-// Cấu hình CoreIOT
-const char* coreIOT_Server = "app.coreiot.io";  
-const char* coreIOT_Token = "2a9lqf9pvmor6aui0bts";   // Device Access Token
-
-// Cấu hình định danh thiết bị và bảo mật Local
-const char* DEVICE_ID = "ESP32_001";
-// Khớp với SHARED_TOKEN của Gateway
-const char* MQTT_PASS = "1234567890"; 
-
-// Cấu hình TinyMQTT (Local Broker)
-const char* tinyMQTT_Server = "192.168.1.3"; // THAY ĐỔI THÀNH IP THỰC TẾ CỦA MÁY CHẠY TINYMQTT
-const int   mqttPort = 1883;
-
-// Cấu hình Tọa độ cố định (Ví dụ: Trung tâm TP.HCM)
+// Biến cố định cho tọa độ (Giữ nguyên)
 const float FIXED_LAT = 10.772175109674038;
 const float FIXED_LON = 106.65789107082472;
-// ----------------------------------------
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-// Cờ nhận diện đường truyền (Nối qua Gateway hay nối thẳng Cloud)
-bool isDirectCoreIOT = false; 
+bool isDirectCoreIOT = false;
 
 void reconnect() {
   int mqttRetryCount = 0;
+  
+  // Khai báo struct để chứa dữ liệu cấu hình từ Queue
+  CoreIotConfig_t coreCfg;
+  MqttLocalConfig_t localCfg;
 
-  // Vòng lặp cho đến khi kết nối được MQTT
   while (!client.connected()) {
-    
-    if (WiFi.status() != WL_CONNECTED || WiFi.localIP() == IPAddress(0,0,0,0)) {
-      Serial.println("Mất mạng hoặc chưa có IP! Đang ép WiFi kết nối lại...");
-      WiFi.reconnect(); 
-      delay(3000);
-      continue; 
+    // Lấy cấu hình mới nhất từ Queue bằng xQueuePeek
+    if (xQueuePeek(coreIotQueue, &coreCfg, 0) != pdPASS || 
+        xQueuePeek(localMqttQueue, &localCfg, 0) != pdPASS) {
+      Serial.println("Waiting for configuration from Queues...");
+      delay(2000);
+      continue;
     }
 
-    // 1. ƯU TIÊN KẾT NỐI VỚI TINYMQTT TRƯỚC
+    if (WiFi.status() != WL_CONNECTED || WiFi.localIP() == IPAddress(0,0,0,0)) {
+      Serial.println("Mất kết nối mạng! Đang chờ WiFi...");
+      WiFi.reconnect();
+      delay(3000);
+      continue;
+    }
+
+    // 1. ƯU TIÊN KẾT NỐI TINYMQTT (LOCAL) TRƯỚC
     Serial.print("Attempting TinyMQTT connection at ");
-    Serial.print(tinyMQTT_Server);
+    Serial.print(localCfg.tiny_server);
     Serial.println(" ...");
     
-    client.setServer(tinyMQTT_Server, mqttPort);
-    
-    // Sử dụng DEVICE_ID làm Username và MQTT_PASS làm Password
-    if (client.connect(DEVICE_ID)) {
+    client.setServer(localCfg.tiny_server, localCfg.port);
+
+    // Sử dụng device_id làm ClientID
+    if (client.connect(localCfg.device_id)) {
       Serial.println("Connected to TinyMQTT!");
-      isDirectCoreIOT = false; // Xác nhận đang đi qua Gateway
+      isDirectCoreIOT = false;
       
-      String rpcTopic = "v1/devices/" + String(DEVICE_ID) + "/rpc/request/+";
+      String rpcTopic = "v1/devices/" + String(localCfg.device_id) + "/rpc/request/+";
       client.subscribe(rpcTopic.c_str());
       
       Serial.println("Subscribed to " + rpcTopic);
-      mqttRetryCount = 0; 
-      break; 
-    } 
-    
+      mqttRetryCount = 0;
+      break;
+    }
+
     Serial.println("TinyMQTT failed. Fallback to CoreIOT Server...");
 
-    // 2. NẾU TINYMQTT LỖI, CHUYỂN SANG COREIOT
-    client.setServer(coreIOT_Server, mqttPort);
-    Serial.print("Attempting CoreIOT connection...");
-    
-    if (client.connect(DEVICE_ID, coreIOT_Token, NULL)) {
+    // 2. NẾU TINYMQTT LỖI, CHUYỂN SANG COREIOT CLOUD
+    client.setServer(coreCfg.server, localCfg.port);
+    Serial.print("Attempting CoreIOT connection to ");
+    Serial.println(coreCfg.server);
+
+    if (client.connect(localCfg.device_id, coreCfg.token, NULL)) {
       Serial.println("Connected to CoreIOT Server!");
-      isDirectCoreIOT = true; // Xác nhận đang nối thẳng lên Cloud
+      isDirectCoreIOT = true;
       
-      // Dùng "me" để CoreIOT Server chấp nhận
-      String rpcTopic = "v1/devices/me/rpc/request/+"; 
+      String rpcTopic = "v1/devices/me/rpc/request/+";
       client.subscribe(rpcTopic.c_str());
       
       Serial.println("Subscribed to " + rpcTopic);
-      mqttRetryCount = 0; 
-      break; 
-      
+      mqttRetryCount = 0;
+      break;
     } else {
       Serial.print("CoreIOT failed, rc=");
       Serial.print(client.state());
       Serial.println(" - try again in 5 seconds");
       delay(5000);
       mqttRetryCount++;
-
+      
       if (mqttRetryCount >= 5) {
-        Serial.println("Kẹt mạng cục bộ! Đang Reset toàn bộ module WiFi...");
+        Serial.println("Kết nối thất bại, đang Reset module WiFi...");
         WiFi.disconnect();
         delay(1000);
         WiFi.reconnect();
         mqttRetryCount = 0;
-        delay(3000); 
+        delay(3000);
       }
     }
   }
@@ -108,35 +101,50 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   StaticJsonDocument<256> doc;
   DeserializationError error = deserializeJson(doc, message);
-
   if (error) {
     Serial.print("deserializeJson() failed: ");
     Serial.println(error.c_str());
     return;
   }
 
-  const char* method = doc["method"];
-  if (strcmp(method, "setStateLED") == 0) {
+const char* method = doc["method"];
+  
+  if (method && strcmp(method, "setStateLED") == 0) {
     bool params = doc["params"];
-
     if (params == true) {
-      Serial.println("Device turned ON.");
+      Serial.println("Device LED turned ON.");
       if (uxSemaphoreGetCount(xSemaphoreLedControl) == 0) {
           xSemaphoreGive(xSemaphoreLedControl);
       }
-    } else {   
-      Serial.println("Device turned OFF.");
+    } else {
+      Serial.println("Device LED turned OFF.");
       xSemaphoreTake(xSemaphoreLedControl, 0);
     }
-  } else {
+  } 
+  // Thêm method điều khiển NeoLED tại đây
+  else if (method && strcmp(method, "setStateNEO") == 0) {
+    bool params = doc["params"];
+    if (params == true) {
+      Serial.println("NeoLED turned ON.");
+      // Kiểm tra nếu Semaphore chưa được Give thì mới Give
+      if (uxSemaphoreGetCount(xSemaphoreNeoControl) == 0) {
+          xSemaphoreGive(xSemaphoreNeoControl);
+      }
+    } else {
+      Serial.println("NeoLED turned OFF.");
+      // Take Semaphore để ra lệnh tắt
+      xSemaphoreTake(xSemaphoreNeoControl, 0);
+    }
+  } 
+  else {
     Serial.print("Unknown method: ");
-    Serial.println(method);
+    Serial.println(method ? method : "NULL");
   }
 }
 
 void setup_coreiot() {
   while(1) {
-    if (xSemaphoreTake(xBinarySemaphoreInternet, portMAX_DELAY )) {
+    if (xSemaphoreTake(xBinarySemaphoreInternet, portMAX_DELAY)) {
       xSemaphoreGive(xBinarySemaphoreInternet);
       break;
     }
@@ -149,8 +157,9 @@ void setup_coreiot() {
 
 void coreiot_task(void *pvParameters) {
   SensorData_t receivedData;
-  WeatherData_t receivedWeather; // Khai báo biến nhận weather
-  
+  WeatherData_t receivedWeather;
+  MqttLocalConfig_t localCfg; // Để lấy MQTT_PASS (token) khi gửi telemetry
+
   setup_coreiot();
 
   while(1) {
@@ -159,36 +168,43 @@ void coreiot_task(void *pvParameters) {
     }
     client.loop();
 
-    // Peek xem có dữ liệu nhiệt ẩm không
+    // Lấy dữ liệu cảm biến
     if (xQueuePeek(sensorQueue, &receivedData, 0) == pdPASS) {
         
-        // Peek xem có dữ liệu ML không
+        // Lấy dữ liệu dự báo thời tiết từ TinyML
         String weatherStr = "Calculating...";
         if (xQueuePeek(weatherQueue, &receivedWeather, 0) == pdPASS) {
             weatherStr = String(receivedWeather.label);
         }
 
-        // Thêm trường "weather" vào chuỗi JSON payload
-        String payload = "{\"temperature\":" + String(receivedData.temperature) + 
-                         ",\"humidity\":" + String(receivedData.humidity) + 
-                         ",\"weather\":\"" + weatherStr + "\"" +          // Thêm dữ liệu nhãn thời tiết
-                         ",\"latitude\":" + String(FIXED_LAT, 6) + 
-                         ",\"longitude\":" + String(FIXED_LON, 6) + 
-                         ",\"token\":\"" + String(MQTT_PASS) + "\"}";
-        
+        // Lấy cấu hình Local để lấy mật khẩu/token thiết bị
+        String deviceToken = "1234567890"; // Giá trị mặc định
+        if (xQueuePeek(localMqttQueue, &localCfg, 0) == pdPASS) {
+            deviceToken = String(localCfg.mqtt_pass);
+        }
+
+        // Tạo JSON payload
+        String payload = "{\"temperature\":" + String(receivedData.temperature) +
+                          ",\"humidity\":" + String(receivedData.humidity) +
+                          ",\"weather\":\"" + weatherStr + "\"" +
+                          ",\"latitude\":" + String(FIXED_LAT, 6) +
+                          ",\"longitude\":" + String(FIXED_LON, 6) +
+                          ",\"token\":\"" + deviceToken + "\"}";
+
         String telemetryTopic;
         
-        // Cấp đúng định dạng Topic theo đường kết nối
+        // Xác định Topic dựa trên cấu hình hiện tại
         if (isDirectCoreIOT) {
-            telemetryTopic = "v1/devices/me/telemetry"; 
+            telemetryTopic = "v1/devices/me/telemetry";
         } else {
-            telemetryTopic = "v1/devices/" + String(DEVICE_ID) + "/telemetry"; 
+            // Nếu qua Gateway, dùng DeviceID từ queue local
+            telemetryTopic = "v1/devices/" + String(localCfg.device_id) + "/telemetry";
         }
-        
+
         client.publish(telemetryTopic.c_str(), payload.c_str());
         Serial.println("Published to " + telemetryTopic + ": " + payload);
-        
     }
-    vTaskDelay(10000);  
+    
+    vTaskDelay(pdMS_TO_TICKS(10000));
   }
 }
